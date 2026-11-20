@@ -1,0 +1,12 @@
+{
+  "network": "qorechain-diana",
+  "ranAt": "2026-11-20T20:58:13.031Z",
+  "uqor": {
+    "spike": "34980419",
+    "escrow-client": "9820000",
+    "escrow-freelancer": "3078338",
+    "escrow-arb-1": "2820000",
+    "escrow-arb-2": "2820000",
+    "escrow-arb-3": "2820000"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "transactions": [
+    {
+      "hash": "71238DCF736600BC26EBABE709BD3EE28A6AACB146595971F69FEF0E8C2338D7",
+      "tier": "pqc",
+      "note": "client opens window [A] for dispute m1"
+    },
+    {
+      "hash": "0x7d1d63d40abce0ae8007f7277d262f146958e124a6b86ba173ad48510aa6f463",
+      "tier": "classical",
+      "note": "dispute A m1 gasUsed 217806 fee 24504 uqor"
+    },
+    {
+      "hash": "6789AD0504F467764F54838DB0B0D1EB43B1E37F60DC15364041422936420445",
+      "tier": "pqc",
+      "note": "client closes dispute window"
+    },
+    {
+      "hash": "CE79C1ECC6B00073885184CE03C5AD1BF52C3E35B756AAD47D5597F7DB4A3ED4",
+      "tier": "pqc",
+      "note": "arb-3 opens window [A] for resolve"
+    },
+    {
+      "hash": "0x4c3a8a79bb9bc95b0f29a7c2401917f160200f01df994478f36fb384785f5c42",
+      "tier": "refused",
+      "note": "resolve with only arb-1 -> TooFew"
+    },
+    {
+      "hash": "0xd1fd4cac9a1565ee665df65d9d5f239e98ec72ec8fc9d25df7ce8099f079a448",
+      "tier": "classical",
+      "note": "arb-3 submits resolve(1, 7000) signed by arb-1 and arb-2 gasUsed 485020 fee 54565 uqor"
+    },
+    {
+      "hash": "DC0B7BE0752ECC04BA9BD0E857E431ECD95A9BBD8BEBC711F213AA7ABD49D4CD",
+      "tier": "pqc",
+      "note": "arb-3 closes resolve window"
+    }
+  ],
+  "opened": {
+    "plaintextHash": "0x7e222e76abe477c5b480f1381f2af9eb0ed84563292168a1da73c17465b82360",
+    "oneShareRefused": true
+  },
+  "clientBefore": "0",
+  "freelancerBefore": "1000000",
+  "ranAt": "2026-11-20T21:23:44.023Z"
+}

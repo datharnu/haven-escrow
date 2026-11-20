@@ -1,0 +1,100 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "transactions": [
+    {
+      "hash": "CE9F6DF815DA487D341749F8ACE8AD197E31F17DB60303729CD6BB40E04327E0",
+      "tier": "pqc",
+      "note": "open unscoped factory deploy window"
+    },
+    {
+      "hash": "0x3a8fed59201dac842c9c05cae11d72d59d27c8da108964f5206f58b975cac309",
+      "tier": "classical",
+      "note": "deploy EscrowFactory gasUsed 2624556 fee 295263 uqor budget 354316"
+    },
+    {
+      "hash": "7B889E511242BC2DA2C917346E8AE7EB0C3424CB4353F7FD5ED9DFCA369050C0",
+      "tier": "pqc",
+      "note": "close factory deploy window"
+    },
+    {
+      "hash": "884D7C21525C1074244859446740A975B32A33F75F4271F3CFB1C85D98A7149C",
+      "tier": "pqc",
+      "note": "open scoped window [factory] for create escrow A, create escrow B"
+    },
+    {
+      "hash": "0x9b7288add82823a392fc667819f33a54ff348b8e0df37bfeeef7468c642fab80",
+      "tier": "classical",
+      "note": "create escrow A gasUsed 1937088 fee 217923 uqor"
+    },
+    {
+      "hash": "0xf4ac289cd80be0c2ac48818b39fddb4eb1118c9ae9bbc805e9111064b99badc2",
+      "tier": "classical",
+      "note": "create escrow B gasUsed 1908074 fee 214659 uqor"
+    },
+    {
+      "hash": "B418C2F06F0CE5CE4912E618B6164D3CEA50AD8B8C79959FDC6545A32E610FA6",
+      "tier": "pqc",
+      "note": "close factory create window"
+    }
+  ],
+  "factory": "0xf30bfc219987E60e849D5cF9e7351b7380eEc09B",
+  "deployer": "0xaC52f45E6787c08E3B22f45e7f35803Fc13e7396",
+  "termsA": {
+    "client": "0xB911fD43FC85826947d1E11084e594f8b9D466bf",
+    "freelancer": "0x4D0D492100220F97d07fEa68612fee70ff037764",
+    "token": "0x97143B771D34ddb9130b807b135Ae675A5a963CA",
+    "arbiters": [
+      "0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248",
+      "0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C",
+      "0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065"
+    ],
+    "reviewPeriod": "86400",
+    "arbiterTimeout": "259200",
+    "defaultSplitBps": 5000,
+    "amounts": [
+      "1000000",
+      "1000000"
+    ],
+    "deadlines": [
+      "1795381106",
+      "1795381106"
+    ]
+  },
+  "termsB": {
+    "client": "0xB911fD43FC85826947d1E11084e594f8b9D466bf",
+    "freelancer": "0x4D0D492100220F97d07fEa68612fee70ff037764",
+    "token": "0x97143B771D34ddb9130b807b135Ae675A5a963CA",
+    "arbiters": [
+      "0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248",
+      "0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C",
+      "0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065"
+    ],
+    "reviewPeriod": "120",
+    "arbiterTimeout": "259200",
+    "defaultSplitBps": 5000,
+    "amounts": [
+      "1000000"
+    ],
+    "deadlines": [
+      "1795294706"
+    ]
+  },
+  "arbiters": [
+    {
+      "name": "escrow-arb-2",
+      "evm": "0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248"
+    },
+    {
+      "name": "escrow-arb-1",
+      "evm": "0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C"
+    },
+    {
+      "name": "escrow-arb-3",
+      "evm": "0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065"
+    }
+  ],
+  "escrowA": "0xE22ff1Cd5d4B9a496C68FeD4946f2cE1dd8954Bd",
+  "escrowB": "0xffd1a9375Ab108Ebe0E439574b5e1D7aA050121A",
+  "ranAt": "2026-11-20T20:58:46.978Z"
+}

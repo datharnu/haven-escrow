@@ -1,0 +1,65 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "windowNote": "a window the owner opened; the attacker signs with the same classical key",
+  "transactions": [
+    {
+      "hash": "B479AED618D64D15582BFBFF61E19E4DED24ACD6AABE0B67647A15E0DEBBEBA5",
+      "tier": "pqc",
+      "note": "a window the owner opened; the attacker signs with the same classical key"
+    },
+    {
+      "hash": "0x23d8d74315ded0ce5aa1cd19c820ffecfaa164bf1bd3ca32f08b2be81699fd9b",
+      "tier": "refused",
+      "note": "release(1) junk signature -> SignatureInvalid"
+    },
+    {
+      "hash": "0xed3dcf05267a9ecddb4316fb615c5509e3f3e5df879f00d9e3320be389fd75d9",
+      "tier": "refused",
+      "note": "release(1) replayed m0 signature -> SignatureInvalid"
+    },
+    {
+      "hash": "0x17fc1668ac8125d0cf5e05fee09875d4fc4578de656baba7ca3673cea86f3b8b",
+      "tier": "refused",
+      "note": "cancel(1) junk signatures -> WrongStatus"
+    },
+    {
+      "hash": "763A5EA33475665F0B99CF80E18ED4115B2C5C2AC6ED865F23E500A251A05A78",
+      "tier": "pqc",
+      "note": "close the owner-opened rehearsal window"
+    }
+  ],
+  "escrowBalance": "1000000",
+  "noWindow": {
+    "accepted": false,
+    "text": "failed to broadcast transaction: account qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q has no open EVM authorisation window; open one with MsgOpenEVMWindow, signed on the Cosmos lane with the account's post-quantum key: no open EVM authorisation window: no open EVM authorisation window [cosmossdk.io/errors@v1.0.2/errors.go:77]"
+  },
+  "classicalOpen": {
+    "accepted": false,
+    "text": "Broadcasting transaction failed with code 20 (codespace: pqc). Log: account qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q has a registered PQC key and must include the hybrid signature extension (hybrid mode: required): hybrid PQC signature required"
+  },
+  "junkRelease": {
+    "accepted": false,
+    "hash": "0x23d8d74315ded0ce5aa1cd19c820ffecfaa164bf1bd3ca32f08b2be81699fd9b",
+    "errorName": "SignatureInvalid",
+    "text": "SignatureInvalid"
+  },
+  "replayedRelease": {
+    "accepted": false,
+    "hash": "0xed3dcf05267a9ecddb4316fb615c5509e3f3e5df879f00d9e3320be389fd75d9",
+    "errorName": "SignatureInvalid",
+    "text": "SignatureInvalid"
+  },
+  "cancel": {
+    "accepted": false,
+    "hash": "0x17fc1668ac8125d0cf5e05fee09875d4fc4578de656baba7ca3673cea86f3b8b",
+    "errorName": "WrongStatus",
+    "text": "WrongStatus"
+  },
+  "missingFunction": {
+    "reverted": true,
+    "text": "Details: execution reverted"
+  },
+  "cancelNote": "The prompt expected SignatureInvalid. A m1 is Delivered and cancel checks status before any signature, so the chain refused with WrongStatus. Approved 20 November 2026: the contract was not reordered.",
+  "ranAt": "2026-11-20T21:22:43.655Z"
+}

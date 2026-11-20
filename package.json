@@ -1,0 +1,48 @@
+{
+  "name": "haven-escrow",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Haven Escrow: milestone escrow whose funds can only reach the two named parties.",
+  "scripts": {
+    "spike": "forge build && tsx scripts/spike.ts",
+    "test:sol": "forge test",
+    "test:ts": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "vectors": "tsx scripts/vectors.ts",
+    "cbom": "tsx scripts/cbom.ts --chain",
+    "cbom:check": "tsx scripts/cbom.ts",
+    "evidence": "tsx scripts/evidence.ts",
+    "fund-account": "tsx scripts/fund-account.ts",
+    "deploy": "forge build && tsx scripts/deploy.ts",
+    "fund-client": "tsx scripts/fund-client.ts",
+    "scene:1": "tsx scripts/scene-1-release.ts",
+    "rehearse": "tsx scripts/rehearse.ts",
+    "scene:3": "tsx scripts/scene-3-dispute.ts",
+    "scene:4": "tsx scripts/scene-4-timeout.ts",
+    "gas": "forge snapshot",
+    "web": "npm --prefix apps/web run dev -- -p 3020"
+  },
+  "dependencies": {
+    "@cosmjs/stargate": "0.39.0",
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@qorechain/evm": "0.14.0",
+    "@qorechain/mcp": "0.1.1",
+    "@qorechain/pqc": "0.2.3",
+    "@qorechain/qoreseal": "0.1.0",
+    "@qorechain/qoresign": "0.1.0",
+    "@qorechain/sdk": "0.14.0",
+    "haven-pq-kit": "github:datharnu/haven-pq-kit#v0.1.0",
+    "shamir-secret-sharing": "0.0.4",
+    "viem": "2.47.6"
+  },
+  "devDependencies": {
+    "@qorechain/qorescan": "0.1.0",
+    "@types/node": "22.19.1",
+    "tsx": "4.19.4",
+    "typescript": "5.6.3",
+    "vitest": "3.2.4"
+  }
+}

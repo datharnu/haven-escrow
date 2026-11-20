@@ -1,0 +1,11 @@
+node_modules
+out
+cache
+.next
+test-results
+playwright-report
+agent-state/
+*.env
+.DS_Store
+tsconfig.tsbuildinfo
+AGENTS.md

@@ -1,0 +1,107 @@
+{
+  "network": "qorechain-diana",
+  "accounts": {
+    "escrow-client": {
+      "cosmos": "qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q",
+      "evm": "0xB911fD43FC85826947d1E11084e594f8b9D466bf",
+      "mlDsaRegistered": true,
+      "kemPublished": true
+    },
+    "escrow-freelancer": {
+      "cosmos": "qor1f5x5jggqyg8e05rlaf5xztlwwrlsxamy9j2pxw",
+      "evm": "0x4D0D492100220F97d07fEa68612fee70ff037764",
+      "mlDsaRegistered": true,
+      "kemPublished": false
+    },
+    "escrow-arb-1": {
+      "cosmos": "qor12kfhuvhykw7k9fyukaexldjw07d2m9zuu9un4v",
+      "evm": "0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C",
+      "mlDsaRegistered": true,
+      "kemPublished": true
+    },
+    "escrow-arb-2": {
+      "cosmos": "qor1qranaxl35r95mue9qyqqffvhytcvdgjg5agc9e",
+      "evm": "0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248",
+      "mlDsaRegistered": true,
+      "kemPublished": true
+    },
+    "escrow-arb-3": {
+      "cosmos": "qor1lq0x9xwwcnsv79hat5q56ycg8hhvvyr9ymya83",
+      "evm": "0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065",
+      "mlDsaRegistered": true,
+      "kemPublished": true
+    }
+  },
+  "transactions": [
+    {
+      "hash": "6B083B9B16D856431AD1A821D29E6A9F30DC4ADD02D388CA350A9EE022DBB529",
+      "tier": "pqc",
+      "note": "fund escrow-client 10000000 uqor from spike"
+    },
+    {
+      "hash": "B734D6338D07F08DF0678B3DA86373912732FC797CEFDAA11AEA037F50DF2CA8",
+      "tier": "pqc",
+      "note": "fund escrow-freelancer 4000000 uqor from spike"
+    },
+    {
+      "hash": "5AD8FD200144F62490B0275CF67ABC115097AFC3EF3A135446D11447E5558CD3",
+      "tier": "pqc",
+      "note": "fund escrow-arb-1 3000000 uqor from spike"
+    },
+    {
+      "hash": "4E552E5EC33A11738785DA4DD06966D3E27C100A71AEEDF33C82A638C1331B15",
+      "tier": "pqc",
+      "note": "fund escrow-arb-2 3000000 uqor from spike"
+    },
+    {
+      "hash": "1BEABF35EFD9FF6FE79982204B0184FC72B00FBF3911D9C6A7C637130452B96D",
+      "tier": "pqc",
+      "note": "fund escrow-arb-3 3000000 uqor from spike"
+    },
+    {
+      "hash": "ED25E911A45744134CA50115F17F54EF5E5709E53CB6769AD6407F000CB9FEFB",
+      "tier": "enrollment",
+      "note": "escrow-client ML-DSA-87 registration"
+    },
+    {
+      "hash": "5A3DE3B31A9CBBAB8B03792E099F90C0803A858D310EA5CF2CFDA81C20ED4C03",
+      "tier": "enrollment",
+      "note": "escrow-freelancer ML-DSA-87 registration"
+    },
+    {
+      "hash": "6E57D773F920004F443C6FD851C7E126B9690ECCE579AAA898FC14000077D0AA",
+      "tier": "enrollment",
+      "note": "escrow-arb-1 ML-DSA-87 registration"
+    },
+    {
+      "hash": "5A127FE3CD560BBDF63DFEF990640343CE25B4223469669E51CB61F2209A646C",
+      "tier": "enrollment",
+      "note": "escrow-arb-2 ML-DSA-87 registration"
+    },
+    {
+      "hash": "A219B30515AE034B4A26410A83BB7BBDCC294F732BD77C7391427E1D0958BD9B",
+      "tier": "enrollment",
+      "note": "escrow-arb-3 ML-DSA-87 registration"
+    },
+    {
+      "hash": "EB78BC7AF1BBFCCA2717425720705A9FB5C7CD23639E30773584428A231D669D",
+      "tier": "pqc",
+      "note": "escrow-client ML-KEM-1024 publication"
+    },
+    {
+      "hash": "0176738B8B0C8861B2AEB120F12DEEC800CFE8EE6BC067B08206477B8D171330",
+      "tier": "pqc",
+      "note": "escrow-arb-1 ML-KEM-1024 publication"
+    },
+    {
+      "hash": "7DC0BFF137FF4EDFCE4FCC5EDD0665795EAC7A89EC0C414CFB9AB866C69AC1AE",
+      "tier": "pqc",
+      "note": "escrow-arb-2 ML-KEM-1024 publication"
+    },
+    {
+      "hash": "779E340DA5574BE35FA53EA385F8C2331D3C67A9E466FF12E991D9629E75D7DE",
+      "tier": "pqc",
+      "note": "escrow-arb-3 ML-KEM-1024 publication"
+    }
+  ]
+}

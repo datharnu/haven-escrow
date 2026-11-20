@@ -1,0 +1,54 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "transactions": [
+    {
+      "hash": "75CC1F2EE77DA2AE3B4C48F109358D9E93CB861E8990E9FDFAEC1952D1F0FF21",
+      "tier": "pqc",
+      "note": "freelancer opens window [B] for deliver m0"
+    },
+    {
+      "hash": "0x40735fcf9943cd77ff5bd24ab4541ef8f6f92b47107d0fb9e58b803825c8d37f",
+      "tier": "classical",
+      "note": "deliver B m0 gasUsed 260112 fee 29263 uqor"
+    },
+    {
+      "hash": "CF4BED1A92A0D5C50C75678FEF63E03FAF8A18CCA748F6267C7374BCEB55EBB9",
+      "tier": "pqc",
+      "note": "freelancer closes deliver B window"
+    },
+    {
+      "hash": "DF0278C3DFD15A840A75D9B1403CFEFDBE1ACC2A4AF3CAFAB935F2B4933F7C99",
+      "tier": "pqc",
+      "note": "spike opens window [B] for the early autoRelease"
+    },
+    {
+      "hash": "0xd06ae211608d06ce12fa1810d21e946ce667067794569772e4c9ab7174507d87",
+      "tier": "refused",
+      "note": "autoRelease before review -> TooEarly"
+    },
+    {
+      "hash": "197F721544D9CBA4741C6AFA185A69E92E020DE3DBFC869BF4ECEF3D81AE7C93",
+      "tier": "pqc",
+      "note": "spike closes the early autoRelease window"
+    },
+    {
+      "hash": "749DF312E023B0383300231212E8BC0D0EC02553AEFF91E79F1E56FF05BE0E05",
+      "tier": "pqc",
+      "note": "spike opens window [B] after the review"
+    },
+    {
+      "hash": "0xf542a066e48d104fabcde058661775ccb3d3c9c6b538d7b52d97f1bb991cd558",
+      "tier": "classical",
+      "note": "autoRelease B m0 gasUsed 74871 fee 8423 uqor"
+    },
+    {
+      "hash": "164A5875DBDD2BAF765AF340A827301795FE280361E8E9A902F75AF4F935B1B2",
+      "tier": "pqc",
+      "note": "spike closes the autoRelease window"
+    }
+  ],
+  "freelancerBefore": "1700000",
+  "deliverable": "deployments/deliverables/0xc43688aab45fe927513b0f74257f8be5a1f99480e9c62c1cf0c6f73fe7296e63.json",
+  "ranAt": "2026-11-20T21:26:20.934Z"
+}

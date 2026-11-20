@@ -1,0 +1,222 @@
+{
+  "network": "qorechain-diana",
+  "steps": {
+    "S1": {
+      "spikeTarget": "0xe11fe2bb1ad13ab116e0d362b218ef1b2330b1a7",
+      "createHash": "0xac057fd48140b66e250f248bb0e4035820d8679e1629bdfd42f964cd333ee358",
+      "openHash": "B75782C6D6BC417A402DB20BE222D2FA77128112E6DEB12CAC5BC9A19861C896",
+      "closeHash": "A5B9D870B49C0E57663F7915402003A5E4FB11F498787C157AA51AF20F441F77",
+      "gasUsed": "448701",
+      "uqor": "50479"
+    },
+    "pendingPing": {
+      "hash": "0x836195008261eacffef0b0ffc91dcb44271588178bb790ea649f65b28b60f8cd",
+      "openHash": "17AC0B78811C7A0326E01A088F97C1A9D2ECB45AB9357C3A2372AB2B0589A568",
+      "closeHash": "15DF8DC39C2621ED23EBC3C1C31E944910D6BF150C8B2563BBC07095F63D7C9D"
+    },
+    "S2": {
+      "openHash": "17AC0B78811C7A0326E01A088F97C1A9D2ECB45AB9357C3A2372AB2B0589A568",
+      "pingHash": "0x836195008261eacffef0b0ffc91dcb44271588178bb790ea649f65b28b60f8cd",
+      "pings": 1,
+      "replayHash": "0xd5634f54f8673f85fc30db6be66571e283c8e0c247ffaf3d293cfb87551830ac",
+      "replayError": "SignatureInvalid",
+      "replayOpenHash": "453A2ADB52E4E7E195A85EE0DEA58B14504DF8FD2AA56CC78C148E9EC77DDF31",
+      "replayCloseHash": "E8D5681214AF6E4A216A5164C91DD24F614671720F0E8BFB59DB66955ECF07A2",
+      "closeHash": "15DF8DC39C2621ED23EBC3C1C31E944910D6BF150C8B2563BBC07095F63D7C9D",
+      "note": "The ping and the replay are in two windows. The first run could not read the revert data, so it closed the window without sending the replay."
+    },
+    "S3": {
+      "outcome": "succeeded",
+      "verbatim": "success",
+      "hash": "0xa0021315f5db9a2fd875749e20412914563fbadc681ab3da3deada90716dc2e0",
+      "openHash": "5283FFA25EC5185B1371C246B26CD5192C380CE06C76CCC475C7BC81C9F1E80D",
+      "closeHash": "ACBBA71AA65C8D5D666A950BD712ADBF38A8E569DDF30B3C753A36959147C35D",
+      "phase4": "EscrowFactory.create runs in a scoped window [factory]"
+    },
+    "S4": {
+      "a": {
+        "accepted": false,
+        "text": "failed to broadcast transaction: account qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q has no open EVM authorisation window; open one with MsgOpenEVMWindow, signed on the Cosmos lane with the account's post-quantum key: no open EVM authorisation window: no open EVM authorisation window [cosmossdk.io/errors@v1.0.2/errors.go:77]"
+      },
+      "b": {
+        "accepted": false,
+        "text": "Broadcasting transaction failed with code 20 (codespace: pqc). Log: account qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q has a registered PQC key and must include the hybrid signature extension (hybrid mode: required): hybrid PQC signature required"
+      }
+    },
+    "S5": {
+      "gas": [
+        {
+          "label": "S1 deploy",
+          "hash": "0xac057fd48140b66e250f248bb0e4035820d8679e1629bdfd42f964cd333ee358",
+          "gasUsed": "448701",
+          "effectiveGasPrice": "112500000000",
+          "uqor": "50479"
+        },
+        {
+          "label": "S2 ping",
+          "hash": "0x836195008261eacffef0b0ffc91dcb44271588178bb790ea649f65b28b60f8cd",
+          "gasUsed": "242549",
+          "effectiveGasPrice": "112500000000",
+          "uqor": "27287"
+        },
+        {
+          "label": "S2 replay",
+          "hash": "0xd5634f54f8673f85fc30db6be66571e283c8e0c247ffaf3d293cfb87551830ac",
+          "gasUsed": "750000",
+          "effectiveGasPrice": "112500000000",
+          "uqor": "84375"
+        },
+        {
+          "label": "S3 spawn",
+          "hash": "0xa0021315f5db9a2fd875749e20412914563fbadc681ab3da3deada90716dc2e0",
+          "gasUsed": "64923",
+          "effectiveGasPrice": "112500000000",
+          "uqor": "7304"
+        }
+      ],
+      "windows": [
+        {
+          "label": "S1 deploy",
+          "openHash": "B75782C6D6BC417A402DB20BE222D2FA77128112E6DEB12CAC5BC9A19861C896",
+          "closeHash": "A5B9D870B49C0E57663F7915402003A5E4FB11F498787C157AA51AF20F441F77",
+          "usedValue": "50479",
+          "cap": "5000000"
+        },
+        {
+          "label": "S2 replay",
+          "openHash": "453A2ADB52E4E7E195A85EE0DEA58B14504DF8FD2AA56CC78C148E9EC77DDF31",
+          "closeHash": "E8D5681214AF6E4A216A5164C91DD24F614671720F0E8BFB59DB66955ECF07A2",
+          "usedValue": "382500",
+          "cap": "2000000"
+        },
+        {
+          "label": "S3 spawn",
+          "openHash": "5283FFA25EC5185B1371C246B26CD5192C380CE06C76CCC475C7BC81C9F1E80D",
+          "closeHash": "ACBBA71AA65C8D5D666A950BD712ADBF38A8E569DDF30B3C753A36959147C35D",
+          "usedValue": "16587",
+          "cap": "2000000"
+        }
+      ]
+    }
+  },
+  "gas": [
+    {
+      "label": "S1 deploy",
+      "hash": "0xac057fd48140b66e250f248bb0e4035820d8679e1629bdfd42f964cd333ee358",
+      "gasUsed": "448701",
+      "effectiveGasPrice": "112500000000",
+      "uqor": "50479"
+    },
+    {
+      "label": "S2 ping",
+      "hash": "0x836195008261eacffef0b0ffc91dcb44271588178bb790ea649f65b28b60f8cd",
+      "gasUsed": "242549",
+      "effectiveGasPrice": "112500000000",
+      "uqor": "27287"
+    },
+    {
+      "label": "S2 replay",
+      "hash": "0xd5634f54f8673f85fc30db6be66571e283c8e0c247ffaf3d293cfb87551830ac",
+      "gasUsed": "750000",
+      "effectiveGasPrice": "112500000000",
+      "uqor": "84375"
+    },
+    {
+      "label": "S3 spawn",
+      "hash": "0xa0021315f5db9a2fd875749e20412914563fbadc681ab3da3deada90716dc2e0",
+      "gasUsed": "64923",
+      "effectiveGasPrice": "112500000000",
+      "uqor": "7304"
+    }
+  ],
+  "windows": [
+    {
+      "label": "S1 deploy",
+      "openHash": "B75782C6D6BC417A402DB20BE222D2FA77128112E6DEB12CAC5BC9A19861C896",
+      "closeHash": "A5B9D870B49C0E57663F7915402003A5E4FB11F498787C157AA51AF20F441F77",
+      "usedValue": "50479",
+      "cap": "5000000"
+    },
+    {
+      "label": "S2 replay",
+      "openHash": "453A2ADB52E4E7E195A85EE0DEA58B14504DF8FD2AA56CC78C148E9EC77DDF31",
+      "closeHash": "E8D5681214AF6E4A216A5164C91DD24F614671720F0E8BFB59DB66955ECF07A2",
+      "usedValue": "382500",
+      "cap": "2000000"
+    },
+    {
+      "label": "S3 spawn",
+      "openHash": "5283FFA25EC5185B1371C246B26CD5192C380CE06C76CCC475C7BC81C9F1E80D",
+      "closeHash": "ACBBA71AA65C8D5D666A950BD712ADBF38A8E569DDF30B3C753A36959147C35D",
+      "usedValue": "16587",
+      "cap": "2000000"
+    }
+  ],
+  "transactions": [
+    {
+      "hash": "B75782C6D6BC417A402DB20BE222D2FA77128112E6DEB12CAC5BC9A19861C896",
+      "tier": "pqc",
+      "note": "S1 open unscoped deploy window"
+    },
+    {
+      "hash": "0xac057fd48140b66e250f248bb0e4035820d8679e1629bdfd42f964cd333ee358",
+      "tier": "classical",
+      "note": "S1 deploy SpikeTarget"
+    },
+    {
+      "hash": "A5B9D870B49C0E57663F7915402003A5E4FB11F498787C157AA51AF20F441F77",
+      "tier": "pqc",
+      "note": "S1 close deploy window"
+    },
+    {
+      "hash": "17AC0B78811C7A0326E01A088F97C1A9D2ECB45AB9357C3A2372AB2B0589A568",
+      "tier": "pqc",
+      "note": "S2 open the window that submitted the ping"
+    },
+    {
+      "hash": "0x836195008261eacffef0b0ffc91dcb44271588178bb790ea649f65b28b60f8cd",
+      "tier": "classical",
+      "note": "S2 relayer submits client ML-DSA ping"
+    },
+    {
+      "hash": "15DF8DC39C2621ED23EBC3C1C31E944910D6BF150C8B2563BBC07095F63D7C9D",
+      "tier": "pqc",
+      "note": "S2 close that window. The replay had not been sent."
+    },
+    {
+      "hash": "453A2ADB52E4E7E195A85EE0DEA58B14504DF8FD2AA56CC78C148E9EC77DDF31",
+      "tier": "pqc",
+      "note": "S2 open a second window for the replay"
+    },
+    {
+      "hash": "0xd5634f54f8673f85fc30db6be66571e283c8e0c247ffaf3d293cfb87551830ac",
+      "tier": "refused",
+      "note": "S2 replay of the same ping refused SignatureInvalid"
+    },
+    {
+      "hash": "E8D5681214AF6E4A216A5164C91DD24F614671720F0E8BFB59DB66955ECF07A2",
+      "tier": "pqc",
+      "note": "S2 close the replay window"
+    },
+    {
+      "hash": "0xa0021315f5db9a2fd875749e20412914563fbadc681ab3da3deada90716dc2e0",
+      "tier": "classical",
+      "note": "S3 spawn inside a scoped window"
+    },
+    {
+      "hash": "5283FFA25EC5185B1371C246B26CD5192C380CE06C76CCC475C7BC81C9F1E80D",
+      "tier": "pqc",
+      "note": "S3 open scoped window"
+    },
+    {
+      "hash": "ACBBA71AA65C8D5D666A950BD712ADBF38A8E569DDF30B3C753A36959147C35D",
+      "tier": "pqc",
+      "note": "S3 close scoped window"
+    }
+  ],
+  "createInCall": "succeeded",
+  "ok": true,
+  "spikeTarget": "0xe11fe2bb1ad13ab116e0d362b218ef1b2330b1a7",
+  "owner": "0xb911fd43fc85826947d1e11084e594f8b9d466bf",
+  "ranAt": "2026-11-20T20:08:23.622Z"
+}

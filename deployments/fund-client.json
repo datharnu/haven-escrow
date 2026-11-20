@@ -1,0 +1,33 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "transactions": [
+    {
+      "hash": "9270876CBEF1759C772B7DA3E77C3D5915F6FF6178A68435D5AFFB067C59FBFF",
+      "tier": "pqc",
+      "note": "MsgConvertCoin 2000000 to escrow A and 1000000 to escrow B"
+    },
+    {
+      "hash": "41C8F14CA27D1CC02372654C9414F2497E8D686D3B1C20A494D743D04A9AE3F2",
+      "tier": "pqc",
+      "note": "open scoped window for fund()"
+    },
+    {
+      "hash": "0x3030d499ae0f75dd9d22d5aacb1a0dce8540f4c01b92f952a12c7bb7a942cb16",
+      "tier": "classical",
+      "note": "fund 0xE22ff1Cd5d4B9a496C68FeD4946f2cE1dd8954Bd gasUsed 107772 fee 12125 uqor"
+    },
+    {
+      "hash": "0xcdc73b477528d302b38c30830c8e4a35235f174d08eb0b09c195a72481be3929",
+      "tier": "classical",
+      "note": "fund 0xffd1a9375Ab108Ebe0E439574b5e1D7aA050121A gasUsed 80696 fee 9079 uqor"
+    },
+    {
+      "hash": "CAEC9CD532CC40AD976A959E221D54FAE89684FCA793A0A9AA7D6B43CF7539FC",
+      "tier": "pqc",
+      "note": "close fund window"
+    }
+  ],
+  "convert": "9270876CBEF1759C772B7DA3E77C3D5915F6FF6178A68435D5AFFB067C59FBFF",
+  "ranAt": "2026-11-20T21:07:34.289Z"
+}
