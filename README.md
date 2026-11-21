@@ -260,7 +260,7 @@ npm run evidence
 
 `npm run deploy`, `npm run fund-client`, `npm run scene:1`, `npm run rehearse`, `npm run scene:3`, and `npm run scene:4` send transactions. Each one throws if its report already has `ok: true`. They read keys from `~/.haven/<name>.env`, mode 0600, which is not in the repository.
 
-`npm run vectors` writes `vectors/escrow.json`. `test/Vectors.t.sol` reads it. `npm run cbom` and `npm run cbom:check` are reserved. `scripts/cbom.ts` is not in the repo yet, so those two commands fail until it is.
+`npm run vectors` writes `vectors/escrow.json`. `test/Vectors.t.sol` reads it. `npm run cbom:check` fails if a contract reaches ML-DSA other than through the two precompiles, or if it uses `ecrecover`. It also refuses the fixture in `scripts/fixtures/ecrecover/`, which exists so the check can prove it still catches a classical signature. `npm run cbom` writes `cbom.json` and includes the client account. That file is not committed.
 
 ## Repo map
 
@@ -274,6 +274,7 @@ npm run evidence
 | `src/spike/SpikeTarget.sol` | The precompile spike. Not a party to any escrow |
 | `test/` | Foundry unit, fuzz, invariant, factory, and byte vectors |
 | `test/ts/` | Vitest for the TypeScript signer and the deliverable |
+| `scripts/cbom.ts` | QoreScan inventory, plus the precompile and `ecrecover` check |
 | `scripts/` | Deploy and the four scenes. They stop once the report is `ok` |
 | `deployments/` | The hashes. `npm run evidence` reads these |
 | `deployments/deliverables/` | Ciphertext and sealed envelopes. No file key |
@@ -296,13 +297,13 @@ On testnet, as recorded on 20 November 2026:
 - An early timeout refused, then a timeout release after a real wait.
 - An evidence check of the recorded hashes.
 - Two audit PDFs and the finding map.
+- `npm run cbom:check` passed locally on 21 November 2026. It caught the `ecrecover` fixture.
+- A GitHub Actions workflow at `.github/workflows/test.yml`. It has not gone green yet. This commit is the one that adds it.
 
 Not in the repo yet, and not claimed:
 
 - A website. The script `npm run web` points at `apps/web`, which does not exist.
 - A film and a featured image.
-- `scripts/cbom.ts`, the check that the contracts reach ML-DSA only through the two precompiles and never use `ecrecover`.
-- GitHub Actions.
 - `AI_USAGE.md`.
 - A fresh `.gas-snapshot` that includes `Vectors.t.sol`. The committed snapshot predates that test.
 - A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first.

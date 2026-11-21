@@ -9,3 +9,4 @@ agent-state/
 .DS_Store
 tsconfig.tsbuildinfo
 AGENTS.md
+cbom.json
