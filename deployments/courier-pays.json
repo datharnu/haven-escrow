@@ -20,12 +20,44 @@
     "value": "100000"
   },
   "note": "Courier sealed the file in the browser. The client opened it and signed the receipt. HavenEscrow does not read DeliveryReceipts. The page read receipt() and the ciphertext hash matched. No directory bundle was published and no relay was hosted. The recorded group receipt 0x3dfdb6bdf8a11a81792129083642f706a9b4547a62d4d8ebbe3eceb645566a89 was not used. Escrow 0xb0d8Da3B7979120E6877016810D39a792a3Bdf90 was not touched. Courier did not carry that file.",
-  "transactions": {
+  "hashes": {
     "create": "0xa657aa638fcb31cfa54cadf19d59da5619241cccd7a20fc4fee762c697a8aa16",
     "convert": "0F36FECEFFA1637D4559F6C26F04F89B7543221DC922912D6FA810FB30BB9D52",
     "fund": "0x1bf8055d76fa8e1058a359ab8b7118e2128ae95f8fcb37e4405348a1804a3799",
     "receipt": "0x95a37e72f573830a73e491de42d0f7da7ad33713c80ed35d8626103c90391452",
     "deliver": "0xe98f67c12f88e65c389ac66064a83696ed6cbe0d73da28bea3c7b25779dd4895",
     "release": "0x602ed45cda12d5c36e89e4f559e6e3ef754e2d50015a3e4eee68ab81c57e22d8"
-  }
+  },
+  "transactions": [
+    {
+      "hash": "0xa657aa638fcb31cfa54cadf19d59da5619241cccd7a20fc4fee762c697a8aa16",
+      "tier": "classical",
+      "note": "create. get_pq_status tier classical."
+    },
+    {
+      "hash": "0F36FECEFFA1637D4559F6C26F04F89B7543221DC922912D6FA810FB30BB9D52",
+      "tier": "pqc",
+      "note": "convert 100000 fUSD base units into the escrow. get_pq_status tier pqc."
+    },
+    {
+      "hash": "0x1bf8055d76fa8e1058a359ab8b7118e2128ae95f8fcb37e4405348a1804a3799",
+      "tier": "classical",
+      "note": "fund. get_pq_status tier classical."
+    },
+    {
+      "hash": "0x95a37e72f573830a73e491de42d0f7da7ad33713c80ed35d8626103c90391452",
+      "tier": "classical",
+      "note": "receipt on DeliveryReceipts 0x06b52afc4a151b0efa260e2adcdf2d477632cb56. get_pq_status tier classical. HavenEscrow does not read DeliveryReceipts."
+    },
+    {
+      "hash": "0xe98f67c12f88e65c389ac66064a83696ed6cbe0d73da28bea3c7b25779dd4895",
+      "tier": "classical",
+      "note": "deliver. get_pq_status tier classical."
+    },
+    {
+      "hash": "0x602ed45cda12d5c36e89e4f559e6e3ef754e2d50015a3e4eee68ab81c57e22d8",
+      "tier": "classical",
+      "note": "release. 100000 fUSD base units to the stored freelancer. get_pq_status tier classical."
+    }
+  ]
 }
