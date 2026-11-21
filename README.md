@@ -21,7 +21,7 @@ npm ci
 npm run evidence
 ```
 
-`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. On 21 November 2026 it printed 73 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
+`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. On 21 November 2026, after the Courier carry, it printed 79 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
 
 `forge test` and `npm run test:ts` need no chain and no key. They use a mock of the precompiles. A passing test is not a testnet receipt.
 
