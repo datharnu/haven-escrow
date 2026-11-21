@@ -57,7 +57,7 @@ The category requirements are the ones published on the [Prizes](https://build.q
 | Two-stage QCAI audit | [docs/audit/stage-1-2026-11-21.pdf](docs/audit/stage-1-2026-11-21.pdf) and [docs/audit/stage-2-2026-11-21.pdf](docs/audit/stage-2-2026-11-21.pdf), Ethereum (EVM/Solidity), same source. Mapped in [docs/AUDIT.md](docs/AUDIT.md) | Both PDFs score 35/100. Every finding names a function that is not in the source. The contract was not changed to chase the score. Quantum readiness is "Not scored" on this setting, which the FAQ says is expected |
 | Foundry tests | `forge test` runs `test/HavenEscrow.t.sol`, `test/HavenEscrow.fuzz.t.sol`, `test/HavenEscrow.invariant.t.sol`, `test/EscrowFactory.t.sol`, and `test/Vectors.t.sol` | The mock signatures are keccak MACs of length 4627. They are not ML-DSA. Live signatures are only in the scene scripts |
 | Public repo, README, Apache-2.0 | This file and [LICENSE](LICENSE) | A film and a featured image are not in the repo yet. The rules also ask for those on the project page |
-| Original work during the fest | Written in November 2026. The payment rule is the same shape as [Meter](https://github.com/datharnu/Meter): a stored line, and no other recipient. The contracts were written for QoreChain | Kits are credited in [Credits](#credits). No code was copied from another entrant |
+| Original work during the fest | Written in November 2026. The payment rule is the same shape as [Meter](https://github.com/datharnu/Meter): a stored line, and no other recipient. The contracts were written for QoreChain | Kits are credited in [Credits](#credits), including the authorization interface |
 
 ## Contents
 
@@ -314,11 +314,9 @@ Not in the repo yet, and not claimed:
 Written during the fest, November 2026. It builds on:
 
 - **QoreChain kits:** `@qorechain/sdk`, `@qorechain/pqc`, `@qorechain/qoreseal`, `@qorechain/qoresign`, `@qorechain/mcp`, `@qorechain/qorescan`, and `@qorechain/evm`.
-- **haven-pq-kit v0.1.0:** https://github.com/datharnu/haven-pq-kit. `PqAuth` and `PqQuorum` are the signature checks. The submodule is pinned to commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`.
+- **haven-pq-kit v0.1.0:** https://github.com/datharnu/haven-pq-kit. `PqAuth` and `PqQuorum` are the signature checks. The submodule is pinned to commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`. Their interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr, Apache-2.0. The implementation was written for Haven.
 - **Meter:** the earlier rule that a stored payment line has one recipient. The idea was kept. The contracts were written for this chain.
 - **Other libraries:** viem, `@cosmjs/stargate`, `@noble/ciphers`, `@noble/hashes`, `shamir-secret-sharing`, forge-std, Vitest, tsx, and TypeScript.
-
-No code was copied from another entrant.
 
 ## Licence
 
