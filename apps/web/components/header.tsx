@@ -24,6 +24,9 @@ export function Header() {
           <Link href="/record" className="inline-flex h-10 items-center rounded-lg px-3 text-sm text-muted hover:bg-raise hover:text-ink">
             Record
           </Link>
+          <Link href="/practice" className="inline-flex h-10 items-center rounded-lg px-3 text-sm text-muted hover:bg-raise hover:text-ink">
+            Practice
+          </Link>
           <ThemeToggle />
         </nav>
       </div>

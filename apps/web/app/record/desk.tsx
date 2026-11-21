@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ESCROWS, findStep, SCENES, shortHash, type Outcome, type Scene, type Step } from "@/lib/record";
+import { SealedFiles } from "@/components/sealed";
 import { mark, useRecordCheck, VerifyBar, VerifyStep } from "@/components/verify";
 
 const FILTERS = ["All", "Paid", "Refused", "Held"] as const;
@@ -170,6 +171,7 @@ export function Desk({ initialScene }: { initialScene: string }) {
             onVerify={() => void check.check(step)}
           />
         )}
+        <SealedFiles sceneId={scene.id} />
       </section>
     </div>
   );

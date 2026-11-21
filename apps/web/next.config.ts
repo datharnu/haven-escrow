@@ -21,6 +21,21 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   agentRules: false,
   turbopack: { root: process.cwd() },
+  async rewrites() {
+    const rest = "https://api-testnet.qore.host";
+    return [
+      { source: "/qore-rest/cosmos/auth/v1beta1/accounts/:address", destination: `${rest}/cosmos/auth/v1beta1/accounts/:address` },
+      { source: "/qore-rest/qorechain/pqc/v1/account/:address", destination: `${rest}/qorechain/pqc/v1/account/:address` },
+      { source: "/qore-rest/qorechain/pqc/v1/evm_window/:address", destination: `${rest}/qorechain/pqc/v1/evm_window/:address` },
+      { source: "/qore-rest/qorechain/pqc/v1/protocol_features", destination: `${rest}/qorechain/pqc/v1/protocol_features` },
+      { source: "/qore-rest/cosmos/bank/v1beta1/balances/:address", destination: `${rest}/cosmos/bank/v1beta1/balances/:address` },
+      {
+        source: "/qore-rest/cosmos/bank/v1beta1/balances/:address/by_denom",
+        destination: `${rest}/cosmos/bank/v1beta1/balances/:address/by_denom`,
+      },
+      { source: "/qore-rpc", destination: "https://rpc-testnet.qore.host/" },
+    ];
+  },
   async headers() {
     return [
       {

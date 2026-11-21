@@ -11,9 +11,15 @@ for (const width of [390, 1440]) {
 
     await page.getByRole("link", { name: "Open the record" }).click();
     await expect(page.getByRole("heading", { name: /What the chain/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The sealed file" })).toBeVisible();
     await expect(page.getByText("SignatureInvalid").first()).toBeHidden();
     await page.getByRole("tab", { name: /The classical key/ }).click();
     await expect(page.getByText("SignatureInvalid").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The sealed file" })).toHaveCount(0);
+    await page.getByRole("tab", { name: "Two arbiters" }).click();
+    await expect(page.getByRole("heading", { name: "The sealed file" })).toBeVisible();
+    await expect(page.getByText("Three sealed envelopes, one per arbiter.")).toBeVisible();
+    await expect(page.getByText("It cannot open it")).toBeVisible();
     overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });
@@ -41,5 +47,5 @@ test("the known release hash opens that step", async ({ page }) => {
   await page.goto("/record");
   await page.getByLabel("Look up a transaction hash").fill("0x2ef9eac1ad5f785e");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.getByRole("heading", { level: 3 })).toContainText("1.000000 fUSD");
+  await expect(page.getByRole("heading", { level: 3, name: /1.000000 fUSD/ })).toBeVisible();
 });

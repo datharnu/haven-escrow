@@ -77,7 +77,7 @@ The category requirements are the ones published on the [Prizes](https://build.q
 | `pqcVerify` | `deliver`, `release`, `dispute`, and `cancel` go through `PqAuth.authorize`. `resolve` goes through `PqQuorum`. Both call `0x…0a01`. The constructor calls `pqcKeyStatus` at `0x…0a02` for all five parties | HavenEscrow does not inline the precompile. The call sits in [haven-pq-kit](https://github.com/datharnu/haven-pq-kit) v0.1.0, which this repo vendors. The automatic checker looks for the address in runtime code. The factory's runtime code embeds the escrow initcode, which contains both addresses |
 | Two-stage QCAI audit | [docs/audit/stage-1-2026-11-21.pdf](docs/audit/stage-1-2026-11-21.pdf) and [docs/audit/stage-2-2026-11-21.pdf](docs/audit/stage-2-2026-11-21.pdf), Ethereum (EVM/Solidity), same source. Mapped in [docs/AUDIT.md](docs/AUDIT.md) | Both PDFs score 35/100. Every finding names a function that is not in the source. The contract was not changed to chase the score. Quantum readiness is "Not scored" on this setting, which the FAQ says is expected |
 | Foundry tests | `forge test` runs `test/HavenEscrow.t.sol`, `test/HavenEscrow.fuzz.t.sol`, `test/HavenEscrow.invariant.t.sol`, `test/EscrowFactory.t.sol`, and `test/Vectors.t.sol` | The mock signatures are keccak MACs of length 4627. They are not ML-DSA. Live signatures are only in the scene scripts |
-| Public repo, README, Apache-2.0 | This file and [LICENSE](LICENSE) | A film and a featured image are not in the repo yet. The rules also ask for those on the project page |
+| Public repo, README, Apache-2.0 | This file and [LICENSE](LICENSE) | The featured image is [docs/featured.png](docs/featured.png), 1200×630. The film has not been recorded. The shot list is [docs/DEMO.md](docs/DEMO.md). The rules also ask for the film on the project page |
 | Original work during the fest | Written in November 2026. The payment rule is the same shape as [Meter](https://github.com/datharnu/Meter): a stored line, and no other recipient. The contracts were written for QoreChain | Kits are credited in [Credits](#credits), including the authorization interface |
 
 ## Contents
@@ -306,7 +306,7 @@ npm run smoke             # Playwright, production build, at 390 and 1440
 | `src/spike/SpikeTarget.sol` | The precompile spike. Not a party to any escrow |
 | `test/` | Foundry unit, fuzz, invariant, factory, and byte vectors |
 | `test/ts/` | Vitest for the TypeScript signer and the deliverable |
-| `apps/web` | The replay. `/` is the rule. `/record` walks the four scenes |
+| `apps/web` | The replay and the practice deal. `/` is the rule. `/record` walks the four scenes. `/practice` makes browser identities |
 | `scripts/cbom.ts` | QoreScan inventory, plus the precompile and `ecrecover` check |
 | `scripts/` | Deploy and the four scenes. They stop once the report is `ok` |
 | `deployments/` | The hashes. `npm run evidence` reads these |
@@ -335,8 +335,11 @@ On testnet, as recorded on 20 November 2026:
 
 Not in the repo yet, and not claimed:
 
-- A film and a featured image. The film can be recorded from https://havenesc.vercel.app/record.
-- A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first.
+- A full practice path on testnet. `/practice` can send one after you confirm, including Try to steal the pay, a sealed file, and a Courier receipt of that file’s ciphertext hash. No throwaway run is recorded, so there is no Haven family line, and the QOR cost of each action has not been measured on a new escrow. The last `DeliveryReceipts.record` used 288262 gas.
+- No third name, as a panel. `resolve` takes `address[] who`. Those addresses sign the split. They are not paid: `_pay` in `src/HavenEscrow.sol` transfers only to the stored client or the stored freelancer. The check that was going to list address parameters stopped on `who`, on 21 November 2026.
+- The sealed file is on `/record` for scenes 1 and 3. The page recomputes the commitment from the published ciphertext and the three envelopes. It does not open the file, and it does not show a share or the file key. Escrow B's manifest is checked by the unit test and is not on the timeout scene.
+- A film. The shot list is [docs/DEMO.md](docs/DEMO.md). The featured image is [docs/featured.png](docs/featured.png). The film itself has not been recorded.
+- A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first. The practice page does not call it.
 - Source verification on the explorer. The explorer has none. The compiler settings are in `foundry.toml`.
 
 ## Credits
@@ -344,7 +347,7 @@ Not in the repo yet, and not claimed:
 Written during the fest, November 2026. It builds on:
 
 - **Haven family:** none yet. Steward and Courier use haven-pq-kit. Neither calls this escrow, and this escrow does not call them. [docs/kits.md](docs/kits.md) is the map. [AI_USAGE.md](AI_USAGE.md) says what a person decided.
-- **QoreChain kits:** `@qorechain/sdk`, `@qorechain/pqc`, `@qorechain/qoreseal`, `@qorechain/qoresign`, `@qorechain/mcp`, `@qorechain/qorescan`, and `@qorechain/evm`.
+- **QoreChain kits:** `@qorechain/sdk`, `@qorechain/pqc`, `@qorechain/qoreseal`, `@qorechain/qoresign`, `@qorechain/mcp`, `@qorechain/qorescan`, `@qorechain/evm`, `@qorechain/wallet-adapter`, and `@qorechain/qorex-types`. The last two add the testnet to MetaMask and let QoreX send test QOR. They do not sign a release.
 - **haven-pq-kit v0.1.0:** https://github.com/datharnu/haven-pq-kit. `PqAuth` and `PqQuorum` are the signature checks. The submodule is pinned to commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`. Their interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr, Apache-2.0. The implementation was written for Haven.
 - **Meter:** the earlier rule that a stored payment line has one recipient. The idea was kept. The contracts were written for this chain.
 - **Other libraries:** viem, `@cosmjs/stargate`, `@noble/ciphers`, `@noble/hashes`, `shamir-secret-sharing`, forge-std, Vitest, tsx, and TypeScript.

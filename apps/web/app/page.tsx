@@ -10,9 +10,9 @@ export default function Home() {
         Funds leave only for the <span className="serif text-muted">two names</span> on the line.
       </h1>
       <p className="mt-5 max-w-[54ch] text-[17px] text-muted">
-        A release needs a fresh ML-DSA-87 signature, or a timeout those two people already accepted. This site replays
-        the four testnet scenes. It does not connect a wallet and it does not send a transaction. On the record, Verify
-        this step reads a hash from the testnet.
+        A release needs a fresh ML-DSA-87 signature, or a timeout those two people already accepted. The record replays
+        the four testnet scenes. It does not connect a wallet and it does not send a transaction. The practice deal
+        sends only after you confirm. On the record, Verify this step reads a hash from the testnet.
       </p>
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <Link
@@ -20,6 +20,9 @@ export default function Home() {
           className="inline-flex h-12 items-center rounded-lg bg-brand px-5 text-[15px] text-on-brand shadow-[0_0_0_0_var(--color-canvas)] transition-[box-shadow,transform] duration-300 hover:shadow-[0_0_0_2px_var(--color-canvas),0_0_0_4px_color-mix(in_srgb,var(--color-brand)_55%,transparent)] active:scale-[0.97]"
         >
           Open the record
+        </Link>
+        <Link href="/practice" className="inline-flex h-12 items-center rounded-lg bg-raise px-5 text-[15px] shadow-[inset_0_0_0_1px_var(--color-line)]">
+          Practice deal
         </Link>
         <span className="num text-[12px] text-faint">
           {RECORDED} · qorechain-diana
