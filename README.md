@@ -6,7 +6,7 @@ Track: Post-Quantum dApp, [Build Before Q-Day](https://build.qorechain.io/). Rep
 
 Network `qorechain-diana`, EVM chain id 9800. The contracts are on testnet. They are not on mainnet. The fUSD in them is a test token and has no value.
 
-There is no public website and no film in this repository yet. A juror can still check the rule without our keys. The path is below.
+The site in this repository replays the four scenes. It does not send a transaction. There is no public URL yet, and there is no film yet. A juror can also re-check the hashes without our keys. Both paths are below.
 
 ## Judge it without our keys
 
@@ -121,7 +121,7 @@ Released, Resolved, Refunded, and Cancelled are final. Time is the chain's block
 | The QCAI score is a jury score | Both PDFs say 35/100. The FAQ says jurors read the PDF next to the explanation. [docs/AUDIT.md](docs/AUDIT.md) is that explanation |
 | The tests are live ML-DSA | Foundry has no precompiles. `npm run evidence` is the live check |
 | Mainnet | `pqcVerify` and `pqcKeyStatus` are on diana. The docs say they are not on mainnet yet |
-| A website a juror can click | `apps/web` is not in this repo yet. The judge path today is `npm run evidence` |
+| A website a juror can click | `apps/web` replays the four scenes. `npm run web` serves it at http://localhost:3020. It is not deployed, and it does not read the chain. `npm run evidence` is the live re-check |
 | The pool bought the fUSD | Pool 2 quoted 178,034 base units for 6 QOR, under the 3.1 fUSD the scenes needed. No swap was sent. The client account claimed the faucet, and `MsgConvertCoin` moved 2 fUSD to escrow A and 1 fUSD to escrow B |
 | `resolveTimeout` has a testnet receipt | The function is in the contract and in the Foundry tests. Scene 3 settled before the arbiter timeout |
 
@@ -256,6 +256,16 @@ forge test
 npm run test:ts
 npm run typecheck
 npm run evidence
+npm run web               # http://localhost:3020, replay only, no wallet
+```
+
+The site's own checks:
+
+```bash
+cd apps/web
+npm ci
+npm run typecheck
+npm run smoke             # Playwright, production build, at 390 and 1440
 ```
 
 `npm run deploy`, `npm run fund-client`, `npm run scene:1`, `npm run rehearse`, `npm run scene:3`, and `npm run scene:4` send transactions. Each one throws if its report already has `ok: true`. They read keys from `~/.haven/<name>.env`, mode 0600, which is not in the repository.
@@ -274,6 +284,7 @@ npm run evidence
 | `src/spike/SpikeTarget.sol` | The precompile spike. Not a party to any escrow |
 | `test/` | Foundry unit, fuzz, invariant, factory, and byte vectors |
 | `test/ts/` | Vitest for the TypeScript signer and the deliverable |
+| `apps/web` | The replay. `/` is the rule. `/record` walks the four scenes |
 | `scripts/cbom.ts` | QoreScan inventory, plus the precompile and `ecrecover` check |
 | `scripts/` | Deploy and the four scenes. They stop once the report is `ok` |
 | `deployments/` | The hashes. `npm run evidence` reads these |
@@ -298,12 +309,12 @@ On testnet, as recorded on 20 November 2026:
 - An evidence check of the recorded hashes.
 - Two audit PDFs and the finding map.
 - `npm run cbom:check` passed locally on 21 November 2026. It caught the `ecrecover` fixture.
-- A GitHub Actions workflow at `.github/workflows/test.yml`. It has not gone green yet. This commit is the one that adds it.
+- A GitHub Actions workflow at `.github/workflows/test.yml`. The contract and cryptography job went green on 21 November 2026 (run 44886746463). That run did not include the web smoke job, which is in the workflow now.
 
 Not in the repo yet, and not claimed:
 
-- A website. The script `npm run web` points at `apps/web`, which does not exist.
-- A film and a featured image.
+- A public URL. `npm run web` serves the replay at http://localhost:3020. It has not been deployed.
+- A film and a featured image. The film can be recorded from `/record`.
 - `AI_USAGE.md`.
 - A fresh `.gas-snapshot` that includes `Vectors.t.sol`. The committed snapshot predates that test.
 - A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first.

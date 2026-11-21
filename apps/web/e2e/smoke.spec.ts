@@ -1,0 +1,45 @@
+import { expect, test } from "@playwright/test";
+
+for (const width of [390, 1440]) {
+  test(`home and record fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open the record" })).toBeVisible();
+    let overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    await page.getByRole("link", { name: "Open the record" }).click();
+    await expect(page.getByRole("heading", { name: /What the chain/ })).toBeVisible();
+    await expect(page.getByText("SignatureInvalid").first()).toBeHidden();
+    await page.getByRole("tab", { name: /The classical key/ }).click();
+    await expect(page.getByText("SignatureInvalid").first()).toBeVisible();
+    overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}
+
+test("a refusal filter can be empty, and an unknown hash is refused", async ({ page }) => {
+  await page.goto("/record?scene=release");
+  await page.getByRole("button", { name: "Refused", exact: true }).click();
+  await expect(page.getByText("This scene has no refusals.")).toBeVisible();
+  await page.getByLabel("Look up a transaction hash").fill("0xdeadbeef");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.getByText("That hash is not in this record.")).toBeVisible();
+});
+
+test("the light theme stays on after leaving the page", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Switch to light" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("link", { name: "Open the record" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.getByRole("button", { name: "Switch to dark" })).toBeVisible();
+});
+
+test("the known release hash opens that step", async ({ page }) => {
+  await page.goto("/record");
+  await page.getByLabel("Look up a transaction hash").fill("0x2ef9eac1ad5f785e");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.getByRole("heading", { level: 3 })).toContainText("1.000000 fUSD");
+});
