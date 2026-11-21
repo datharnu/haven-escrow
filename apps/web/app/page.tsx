@@ -11,7 +11,8 @@ export default function Home() {
       </h1>
       <p className="mt-5 max-w-[54ch] text-[17px] text-muted">
         A release needs a fresh ML-DSA-87 signature, or a timeout those two people already accepted. This site replays
-        the four testnet scenes. It does not connect a wallet and it does not send a transaction.
+        the four testnet scenes. It does not connect a wallet and it does not send a transaction. On the record, Verify
+        this step reads a hash from the testnet.
       </p>
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <Link

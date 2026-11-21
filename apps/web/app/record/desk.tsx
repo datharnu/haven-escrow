@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ESCROWS, findStep, SCENES, shortHash, type Outcome, type Scene, type Step } from "@/lib/record";
+import { mark, useRecordCheck, VerifyBar, VerifyStep } from "@/components/verify";
 
 const FILTERS = ["All", "Paid", "Refused", "Held"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -20,6 +21,7 @@ export function Desk({ initialScene }: { initialScene: string }) {
   const [query, setQuery] = useState("");
   const [lookup, setLookup] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const check = useRecordCheck();
 
   const scene = SCENES.find((item) => item.id === sceneId) ?? SCENES[0];
   const visible = useMemo(
@@ -93,6 +95,13 @@ export function Desk({ initialScene }: { initialScene: string }) {
           </p>
         </div>
         <p className="mt-3 max-w-[62ch] text-[15px] text-muted">{scene.summary}</p>
+        <VerifyBar
+          busy={check.busy}
+          progress={check.progress}
+          failed={Object.values(check.results).some((verdict) => verdict.networkError)}
+          onAll={() => void check.checkAll()}
+          onRetry={() => void check.retryFailed()}
+        />
 
         <form onSubmit={onLookup} className="mt-5 flex flex-col gap-2 sm:flex-row">
           <label className="sr-only" htmlFor="hash">
@@ -155,6 +164,10 @@ export function Desk({ initialScene }: { initialScene: string }) {
             onPick={setStepId}
             copied={copied}
             onCopy={copy}
+            verdict={check.results[step.id]}
+            marks={check.results}
+            busy={check.busy}
+            onVerify={() => void check.check(step)}
           />
         )}
       </section>
@@ -168,12 +181,20 @@ function Ticket({
   onPick,
   copied,
   onCopy,
+  verdict,
+  marks,
+  busy,
+  onVerify,
 }: {
   steps: Step[];
   step: Step;
   onPick: (id: string) => void;
   copied: boolean;
   onCopy: (hash: string) => void;
+  verdict: ReturnType<typeof useRecordCheck>["results"][string] | undefined;
+  marks: ReturnType<typeof useRecordCheck>["results"];
+  busy: boolean;
+  onVerify: () => void;
 }) {
   const index = steps.findIndex((item) => item.id === step.id);
   return (
@@ -193,6 +214,7 @@ function Ticket({
                 <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] tracking-[0.06em] uppercase ${TONE[item.outcome]}`}>
                   {item.error ?? item.outcome}
                 </span>
+                {mark(marks[item.id]) ? <span className="mt-1 block text-[11px] text-faint">{mark(marks[item.id])}</span> : null}
               </span>
             </button>
           </li>
@@ -225,6 +247,7 @@ function Ticket({
             <p className="mt-2 text-[14px] text-muted">Refused before broadcast. There is no transaction hash.</p>
           )}
         </div>
+        <VerifyStep verdict={verdict} busy={busy} onVerify={onVerify} />
         <div className="mt-5 flex gap-2">
           <button
             type="button"

@@ -10,7 +10,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data:",
-  "connect-src 'self'",
+  // @qorechain/pqc 0.2.3 verifies in JavaScript. It does not load WebAssembly, so this does not add wasm-unsafe-eval.
+  "connect-src 'self' https://evm-testnet.qore.host",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

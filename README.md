@@ -25,6 +25,21 @@ npm run evidence
 
 `forge test` and `npm run test:ts` need no chain and no key. They use a mock of the precompiles. A passing test is not a testnet receipt.
 
+## Check a signature in the browser
+
+On `/record`, **Verify this step** reads that transaction from `https://evm-testnet.qore.host`. **Verify all** reads every step. The page rebuilds the ML-DSA-87 message the contract builds, reads the signer's key from `pqcKeyStatus`, and checks the 4627-byte signature with `@qorechain/pqc`. It reads `Released` or `Resolved` and the fUSD `Transfer` logs, and compares the recipient with `client()` and `freelancer()` on the contract. A refused call is replayed at the previous block, because the receipt carries no revert bytes. The EVM receipt decides success or revert. The page does not send a transaction and it does not hold a key. A network failure says "Could not reach the testnet" and is never a pass.
+
+What this check does not prove, as of 21 November 2026:
+
+- The two steps with no hash were refused before broadcast. There is nothing on chain to read.
+- `autoRelease` has no signature. The page can show the receipt. It cannot show a signature that was not made.
+- The scene 2 cancel reverts `WrongStatus` before the signature is read, so the page does not judge that signature.
+- It does not call `resolveTimeout`. That call is not in the record.
+- It does not check the bytecode against the source. `forge test` and [docs/AUDIT.md](docs/AUDIT.md) are that check.
+- It covers the recorded transactions only.
+
+`@qorechain/pqc` 0.2.3 verifies in JavaScript. The page does not add `wasm-unsafe-eval`. The offline test replays a recorded RPC reply, so CI does not call the testnet. `HAVEN_LIVE_VERIFY=1 npm run smoke` is the browser run against the testnet.
+
 ## What was measured
 
 All four scenes ran on 20 November 2026. Escrow A is `0xE22ff1Cd5d4B9a496C68FeD4946f2cE1dd8954Bd`. Escrow B is `0xffd1a9375Ab108Ebe0E439574b5e1D7aA050121A`. Amounts are fUSD base units. 1,000,000 is 1 fUSD.
@@ -121,7 +136,7 @@ Released, Resolved, Refunded, and Cancelled are final. Time is the chain's block
 | The QCAI score is a jury score | Both PDFs say 35/100. The FAQ says jurors read the PDF next to the explanation. [docs/AUDIT.md](docs/AUDIT.md) is that explanation |
 | The tests are live ML-DSA | Foundry has no precompiles. `npm run evidence` is the live check |
 | Mainnet | `pqcVerify` and `pqcKeyStatus` are on diana. The docs say they are not on mainnet yet |
-| A website a juror can click | `apps/web` replays the four scenes. `npm run web` serves it at http://localhost:3020. It is not deployed, and it does not read the chain. `npm run evidence` is the live re-check |
+| A website a juror can click | `apps/web` replays the four scenes and checks the recorded signatures in the browser. `npm run web` serves it at http://localhost:3020. It is not deployed. It sends no transaction |
 | The pool bought the fUSD | Pool 2 quoted 178,034 base units for 6 QOR, under the 3.1 fUSD the scenes needed. No swap was sent. The client account claimed the faucet, and `MsgConvertCoin` moved 2 fUSD to escrow A and 1 fUSD to escrow B |
 | `resolveTimeout` has a testnet receipt | The function is in the contract and in the Foundry tests. Scene 3 settled before the arbiter timeout |
 
@@ -265,6 +280,7 @@ The site's own checks:
 cd apps/web
 npm ci
 npm run typecheck
+npm run test:unit         # vectors, and the recorded RPC reply, offline
 npm run smoke             # Playwright, production build, at 390 and 1440
 ```
 
@@ -313,7 +329,7 @@ On testnet, as recorded on 20 November 2026:
 
 Not in the repo yet, and not claimed:
 
-- A public URL. `npm run web` serves the replay at http://localhost:3020. It has not been deployed.
+- A public URL. `npm run web` serves the replay at http://localhost:3020, and `/record` can check a recorded signature. It has not been deployed.
 - A film and a featured image. The film can be recorded from `/record`.
 - `AI_USAGE.md`.
 - A fresh `.gas-snapshot` that includes `Vectors.t.sol`. The committed snapshot predates that test.

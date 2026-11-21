@@ -10,8 +10,9 @@ export default async function RecordPage({ searchParams }: { searchParams: Promi
         What the chain <span className="serif text-muted">already did</span>.
       </h1>
       <p className="mt-4 max-w-[58ch] text-[16px] text-muted">
-        Recorded on {RECORDED}. Opening a step does not send a transaction. A hash that is not in this file stays
-        unmatched. The live re-check is <span className="num text-[13px]">npm run evidence</span> in the repository.
+        Recorded on {RECORDED}. Opening a step does not send a transaction. Verify this step reads that transaction
+        from the testnet and checks the signature. A hash that is not in this file stays unmatched.{" "}
+        <span className="num text-[13px]">npm run evidence</span> re-checks the same hashes from the repository.
       </p>
       <div className="mt-8">
         <Desk initialScene={scene ?? "release"} />
