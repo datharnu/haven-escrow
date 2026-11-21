@@ -6,7 +6,7 @@ Track: Post-Quantum dApp, [Build Before Q-Day](https://build.qorechain.io/). Rep
 
 Network `qorechain-diana`, EVM chain id 9800. The contracts are on testnet. They are not on mainnet. The fUSD in them is a test token and has no value.
 
-The site in this repository replays the four scenes. It does not send a transaction. There is no public URL yet, and there is no film yet. A juror can also re-check the hashes without our keys. Both paths are below.
+The site in this repository replays the four scenes. It does not send a transaction. The public copy is https://havenesc.vercel.app. There is no film yet. A juror can also re-check the hashes without our keys. Both paths are below.
 
 ## Judge it without our keys
 
@@ -39,6 +39,12 @@ What this check does not prove, as of 21 November 2026:
 - It covers the recorded transactions only.
 
 `@qorechain/pqc` 0.2.3 verifies in JavaScript. The page does not add `wasm-unsafe-eval`. The offline test replays a recorded RPC reply, so CI does not call the testnet. `HAVEN_LIVE_VERIFY=1 npm run smoke` is the browser run against the testnet.
+
+## On the web
+
+The site is the Next.js app in `apps/web`. It has no environment variables and it holds no key. Vercel builds it with the project's root directory set to `apps/web`. The install is `npm ci` and the build is `npm run build`. Leave both as the framework defaults. Do not set a root `vercel.json`. The security headers in `apps/web/next.config.ts` are the ones the production server sends, including `connect-src` for `https://evm-testnet.qore.host` only.
+
+The public copy is https://havenesc.vercel.app. Opened on 21 November 2026. **Verify all** on `/record` finished at 390px and at 1440px. The two-arbiter step read both ML-DSA-87 keys, verified both signatures, and matched `Resolved` 700000 to the freelancer and 300000 to the client. Horizontal overflow was 0. No step said "Could not reach the testnet".
 
 ## What was measured
 
@@ -329,8 +335,7 @@ On testnet, as recorded on 20 November 2026:
 
 Not in the repo yet, and not claimed:
 
-- A public URL. `npm run web` serves the replay at http://localhost:3020, and `/record` can check a recorded signature. It has not been deployed.
-- A film and a featured image. The film can be recorded from `/record`.
+- A film and a featured image. The film can be recorded from https://havenesc.vercel.app/record.
 - `AI_USAGE.md`.
 - A fresh `.gas-snapshot` that includes `Vectors.t.sol`. The committed snapshot predates that test.
 - A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first.
