@@ -11,6 +11,7 @@ import {
   isRegisteredPqcKey,
   openEvmWindowMsg,
   pqcSign,
+  QoreTxError,
   qorechainRegistry,
   signProofOfPossession,
   type EncodeObject,
@@ -316,15 +317,23 @@ async function inWindow(
 }
 
 export async function classicalWindow(account: UnifiedAccount): Promise<{ refused: boolean; detail: string }> {
-  const sent = await broadcast(
-    account,
-    [openEvmWindowMsg({ sender: account.cosmos, blocks: 120, maxTxs: 1, maxValue: "2000000", allowedTargets: [FACTORY] })],
-    "classical",
-  );
-  if (sent.code === 0) {
-    throw new Error("The classical key opened a window. Stop. That must not succeed.");
+  try {
+    const sent = await broadcast(
+      account,
+      [openEvmWindowMsg({ sender: account.cosmos, blocks: 120, maxTxs: 1, maxValue: "2000000", allowedTargets: [FACTORY] })],
+      "classical",
+    );
+    if (sent.code === 0) {
+      throw new Error("The classical key opened a window. Stop. That must not succeed.");
+    }
+    if (sent.code !== 20) {
+      throw new Error(sent.log || `The classical open failed with code ${sent.code}.`);
+    }
+    return { refused: true, detail: sent.log || "Refused with code 20." };
+  } catch (error) {
+    if (!(error instanceof QoreTxError) || error.code !== 20) throw error;
+    return { refused: true, detail: error.rawLog ? `Refused with code 20. ${error.rawLog}` : "Refused with code 20." };
   }
-  return { refused: true, detail: sent.log || `Refused with code ${sent.code}.` };
 }
 
 async function now(): Promise<bigint> {
