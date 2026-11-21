@@ -38,7 +38,10 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { ACTIONS, CHAIN_ID, NETWORK, deliverArgs, disputeArgs, encodeAuthMessage, escrowAbi, quorumAction, releaseArgs, resolveArgs } from "./verify";
-import { DELIVERY_RECEIPTS, RECEIPT_COUNTER, RECORDED_RECEIPT, encodeReceipt, sealPracticeFile } from "./practice-seal";
+import { DELIVERY_RECEIPTS, RECEIPT_COUNTER, RECORDED_RECEIPT, commitmentForCiphertext, conversationFor, encodeReceipt, sealPracticeFile } from "./practice-seal";
+import { openFile, sealFile } from "../vendor/courier/file";
+import { signReceipt } from "../vendor/courier/receipt";
+import { utf8 } from "../vendor/courier/bytes";
 import {
   FACTORY,
   FUSD,
@@ -163,16 +166,28 @@ async function broadcast(
   signMode: "hybrid" | "classical",
   registry?: ReturnType<typeof qorechainRegistry>,
 ): Promise<{ hash: string; code: number; log: string }> {
-  const auth = await accountAuth(account);
   const signer = new EthNativeSigner(account, { signMode, rest: REST, signBytesVersion: "auto", registry });
-  const result = await signer.signAndBroadcast(transport, {
-    chainId: CHAIN,
-    messages,
-    fee: { amount: [...NATIVE_FEE.amount], gas: NATIVE_FEE.gas },
-    accountNumber: auth.accountNumber,
-    sequence: auth.sequence,
-  });
-  return { hash: result.transactionHash, code: result.code, log: result.rawLog ?? "" };
+  let last = { hash: "", code: 32, log: "account sequence mismatch" };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const auth = await accountAuth(account);
+    try {
+      const result = await signer.signAndBroadcast(transport, {
+        chainId: CHAIN,
+        messages,
+        fee: { amount: [...NATIVE_FEE.amount], gas: NATIVE_FEE.gas },
+        accountNumber: auth.accountNumber,
+        sequence: auth.sequence,
+      });
+      last = { hash: result.transactionHash, code: result.code, log: result.rawLog ?? "" };
+    } catch (error) {
+      const log = error instanceof Error ? error.message : "The transaction was refused.";
+      if (!log.includes("sequence mismatch")) throw error;
+      last = { hash: "", code: 32, log };
+    }
+    if (last.code === 0 || !last.log.includes("sequence mismatch")) return last;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  return last;
 }
 
 export async function makePhrases(): Promise<Record<Role, string>> {
@@ -365,7 +380,7 @@ async function nonces(escrow: Address): Promise<{ client: bigint; freelancer: bi
   return { client: row[0], freelancer: row[1], arbiter: row[2] };
 }
 
-export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promise<Address> {
+export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promise<{ escrow: Address; hash: Hex }> {
   const timestamp = await now();
   const terms = practiceTerms({
     client: getAddress(parties.client.evm),
@@ -388,7 +403,7 @@ export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promi
     if (log.address.toLowerCase() !== FACTORY.toLowerCase()) continue;
     try {
       const decoded = decodeEventLog({ abi: factoryAbi, data: log.data, topics: log.topics });
-      if (decoded.eventName === "EscrowCreated") return getAddress(decoded.args.escrow);
+      if (decoded.eventName === "EscrowCreated") return { escrow: getAddress(decoded.args.escrow), hash };
     } catch {
       continue;
     }
@@ -396,7 +411,7 @@ export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promi
   throw new Error("The factory receipt had no EscrowCreated log.");
 }
 
-export async function convertAndFund(client: UnifiedAccount, escrow: Address): Promise<void> {
+export async function convertAndFund(client: UnifiedAccount, escrow: Address): Promise<{ convertHash: string; fundHash: Hex }> {
   const sent = await broadcast(
     client,
     [{
@@ -411,8 +426,22 @@ export async function convertAndFund(client: UnifiedAccount, escrow: Address): P
     convertRegistry,
   );
   if (sent.code !== 0) throw new Error(sent.log || "The fUSD conversion was refused.");
+  await waitForTokens(escrow);
+  const fundHash = await fundMilestone(client, escrow);
+  return { convertHash: sent.hash, fundHash };
+}
+
+async function waitForTokens(escrow: Address): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    if ((await tokenBalance(escrow)) >= PRACTICE_AMOUNT) return;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+  throw new Error("The 0.1 fUSD was not in the escrow. The release was not sent.");
+}
+
+async function fundMilestone(client: UnifiedAccount, escrow: Address): Promise<Hex> {
   const data = encodeFunctionData({ abi: escrowAbi, functionName: "fund" });
-  await inWindow(client, escrow, "call", data, "Fund");
+  return inWindow(client, escrow, "call", data, "Fund");
 }
 
 const receiptAbi = parseAbi([
@@ -471,7 +500,7 @@ export async function deliver(freelancer: UnifiedAccount, escrow: Address): Prom
   await deliverCommitment(freelancer, escrow, commitment);
 }
 
-export async function deliverCommitment(freelancer: UnifiedAccount, escrow: Address, commitment: Hex): Promise<void> {
+export async function deliverCommitment(freelancer: UnifiedAccount, escrow: Address, commitment: Hex): Promise<Hex> {
   guardPractice(freelancer, escrow);
   const nonce = (await nonces(escrow)).freelancer;
   const timestamp = await now();
@@ -490,10 +519,10 @@ export async function deliverCommitment(freelancer: UnifiedAccount, escrow: Addr
     functionName: "deliver",
     args: [0n, commitment, deadline, signature],
   });
-  await inWindow(freelancer, escrow, "call", data, "Deliver");
+  return inWindow(freelancer, escrow, "call", data, "Deliver");
 }
 
-export async function release(client: UnifiedAccount, escrow: Address): Promise<Hex> {
+export async function release(client: UnifiedAccount, escrow: Address): Promise<{ hash: Hex; signature: Hex }> {
   const amount = PRACTICE_AMOUNT;
   const nonce = (await nonces(escrow)).client;
   const deadline = (await now()) + 3600n;
@@ -511,8 +540,8 @@ export async function release(client: UnifiedAccount, escrow: Address): Promise<
     functionName: "release",
     args: [0n, deadline, signature],
   });
-  await inWindow(client, escrow, "call", data, "Release");
-  return signature;
+  const hash = await inWindow(client, escrow, "call", data, "Release");
+  return { hash, signature };
 }
 
 export async function previewCall(to: Address, data: Hex): Promise<{ reverted: boolean; name: string }> {
@@ -729,4 +758,180 @@ export async function stealPay(client: UnifiedAccount, escrow: Address, releaseS
       "Not called. release takes a milestone, a deadline, and a signature. resolve takes the signers in address[] who. The transfer inside the contract goes to the stored client or the stored freelancer.",
   });
   return lines;
+}
+
+const LEFT_ALONE = getAddress("0xb0d8Da3B7979120E6877016810D39a792a3Bdf90");
+const CARRIED_FILE = "Courier carried this file.";
+const transferAbi = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
+
+export type CourierPay = {
+  escrow: Address;
+  createHash: Hex;
+  convertHash: string;
+  fundHash: Hex;
+  conversationId: Hex;
+  counter: number;
+  ciphertextHash: Hex;
+  commitment: Hex;
+  recordHash: Hex;
+  deliverHash: Hex;
+  releaseHash: Hex;
+  payee: Address;
+};
+
+function leaveAlone(escrow: Address): void {
+  if (getAddress(escrow) === LEFT_ALONE) throw new Error("This path does not touch the first practice escrow. The release was not sent.");
+}
+
+export type CarryStart = { escrow: Address; createHash: Hex; convertHash: string; fundHash?: Hex };
+
+/** A new escrow. Courier seals the file in this browser. The receipt is recorded, then the same ciphertext is delivered, then the client releases. */
+export async function courierPays(
+  parties: Record<Role, UnifiedAccount>,
+  resume?: CarryStart,
+  onStarted?: (partial: CarryStart) => void,
+): Promise<CourierPay> {
+  const client = parties.client;
+  const freelancer = parties.freelancer;
+  for (const role of ROLES) {
+    if (isForbidden(parties[role].evm)) {
+      throw new Error("This path does not use a recorded account or a recorded escrow.");
+    }
+  }
+  let escrow: Address;
+  let createHash: Hex;
+  let convertHash: string;
+  let fundHash: Hex;
+  if (resume) {
+    escrow = getAddress(resume.escrow);
+    createHash = resume.createHash;
+    convertHash = resume.convertHash;
+    leaveAlone(escrow);
+    guardPractice(client, escrow);
+    const view = await dealStatus(escrow);
+    if (view.client !== getAddress(client.evm) || view.freelancer !== getAddress(freelancer.evm)) {
+      throw new Error("The payee would not be the stored freelancer. The release was not sent.");
+    }
+    if (view.status === 0) {
+      await waitForTokens(escrow);
+      fundHash = await fundMilestone(client, escrow);
+    } else if (view.status === 1 && resume.fundHash) {
+      fundHash = resume.fundHash;
+    } else {
+      throw new Error("This escrow is not waiting for the file. The release was not sent.");
+    }
+  } else {
+    const created = await createEscrow(parties);
+    escrow = created.escrow;
+    createHash = created.hash;
+    leaveAlone(escrow);
+    guardPractice(client, escrow);
+    onStarted?.({ escrow, createHash, convertHash: "" });
+    const funded = await convertAndFund(client, escrow);
+    convertHash = funded.convertHash;
+    fundHash = funded.fundHash;
+  }
+  onStarted?.({ escrow, createHash, convertHash, fundHash });
+
+  const plain = utf8(CARRIED_FILE);
+  const carried = sealFile(plain);
+  let opened: Uint8Array;
+  try {
+    opened = openFile(carried.blob, carried.key);
+  } catch {
+    carried.key.fill(0);
+    throw new Error("The client could not open the file. The release was not sent.");
+  }
+  const openedFile = opened.length === plain.length && opened.every((byte, index) => byte === plain[index]);
+  if (!openedFile) {
+    carried.key.fill(0);
+    throw new Error("The client could not open the file. The release was not sent.");
+  }
+  const ciphertextHash = keccak256(carried.blob.ciphertext as Hex);
+  const conversationId = conversationFor(escrow);
+  const recipient = getAddress(client.evm);
+  const signed = signReceipt(client.pqc.secretKey, {
+    conversationId,
+    counter: RECEIPT_COUNTER,
+    ciphertextHash,
+    recipient,
+  });
+  if (signed.ciphertextHash.toLowerCase() !== ciphertextHash.toLowerCase()) {
+    carried.key.fill(0);
+    throw new Error("The receipt hash and the delivered file differ. The release was not sent.");
+  }
+  const commitment = await commitmentForCiphertext(escrow, carried.blob.ciphertext as Hex, carried.key);
+  carried.key.fill(0);
+
+  const recordData = encodeFunctionData({
+    abi: receiptAbi,
+    functionName: "record",
+    args: [conversationId, BigInt(RECEIPT_COUNTER), ciphertextHash, recipient, signed.signature as Hex],
+  });
+  const recordHash = await inWindow(client, DELIVERY_RECEIPTS, "call", recordData, "Receipt");
+  if (recordHash.toLowerCase() === RECORDED_RECEIPT.toLowerCase()) {
+    throw new Error("The recorded group receipt was reused. The release was not sent.");
+  }
+  const deliverHash = await deliverCommitment(freelancer, escrow, commitment);
+  const stored = (await publicClient().readContract({
+    address: DELIVERY_RECEIPTS,
+    abi: receiptAbi,
+    functionName: "receipt",
+    args: [conversationId, BigInt(RECEIPT_COUNTER), ciphertextHash, recipient],
+  })) as readonly [Address, bigint];
+  if (stored[1] === 0n) throw new Error("The check could not be read. The release was not sent.");
+  const payee = getAddress(
+    (await publicClient().readContract({ address: escrow, abi: escrowAbi, functionName: "freelancer" })) as string,
+  );
+  if (payee !== getAddress(freelancer.evm)) throw new Error("The payee would not be the stored freelancer. The release was not sent.");
+  const released = await release(client, escrow);
+  const mined = await publicClient().getTransactionReceipt({ hash: released.hash });
+  let paid: Address | null = null;
+  for (const log of mined.logs) {
+    if (getAddress(log.address) !== FUSD) continue;
+    try {
+      const decoded = decodeEventLog({ abi: transferAbi, data: log.data, topics: log.topics });
+      if (decoded.eventName !== "Transfer") continue;
+      const args = decoded.args as { from?: string; to?: string; value?: bigint };
+      if (!args.from || !args.to || args.value !== PRACTICE_AMOUNT) continue;
+      if (getAddress(args.from) !== escrow) continue;
+      paid = getAddress(args.to);
+    } catch {
+      continue;
+    }
+  }
+  if (paid !== payee) throw new Error("The 0.1 fUSD did not go to the stored freelancer.");
+  return {
+    escrow,
+    createHash,
+    convertHash,
+    fundHash,
+    conversationId,
+    counter: RECEIPT_COUNTER,
+    ciphertextHash,
+    commitment,
+    recordHash,
+    deliverHash,
+    releaseHash: released.hash,
+    payee,
+  };
+}
+
+export async function readCarriedReceipt(args: {
+  conversationId: Hex;
+  counter: number;
+  ciphertextHash: Hex;
+  recipient: Address;
+}): Promise<bigint | null> {
+  try {
+    const stored = (await publicClient().readContract({
+      address: DELIVERY_RECEIPTS,
+      abi: receiptAbi,
+      functionName: "receipt",
+      args: [args.conversationId, BigInt(args.counter), args.ciphertextHash, args.recipient],
+    })) as readonly [Address, bigint];
+    return stored[1];
+  } catch {
+    return null;
+  }
 }

@@ -1,0 +1,31 @@
+{
+  "network": "qorechain-diana",
+  "recorded": "2026-11-21T20:56:17.000Z",
+  "escrow": "0x14312980702C0e2c9b85f3478ba9396e59054706",
+  "leftAlone": "0xb0d8Da3B7979120E6877016810D39a792a3Bdf90",
+  "deliveryReceipts": "0x06b52afc4a151b0efa260e2adcdf2d477632cb56",
+  "client": "0x396D67CF527224aA27b7eb7A9e0173E725eeD036",
+  "freelancer": "0x8c7b839B916554803b3356cE05233B36b73aC3FF",
+  "payee": "0x8c7b839B916554803b3356cE05233B36b73aC3FF",
+  "conversationId": "0x1bd78eaa07a0eb76689a6d8b968f85683bac73ec3e331d1e73cc39e1698e43c1",
+  "counter": 0,
+  "ciphertextHash": "0x7d0cf82a1ba8b2bddbf7b4c2f2cd356c877771494be8ac2181c1cd758fb05b74",
+  "commitment": "0x007b3887729d4f5609def6085641381946c8d1bb5d6719e3a1c5dbd2aec05689",
+  "recordedAt": "1795294577",
+  "milestoneStatus": 3,
+  "releaseTransfer": {
+    "token": "0x97143B771D34ddb9130b807b135Ae675A5a963CA",
+    "from": "0x14312980702C0e2c9b85f3478ba9396e59054706",
+    "to": "0x8c7b839B916554803b3356cE05233B36b73aC3FF",
+    "value": "100000"
+  },
+  "note": "Courier sealed the file in the browser. The client opened it and signed the receipt. HavenEscrow does not read DeliveryReceipts. The page read receipt() and the ciphertext hash matched. No directory bundle was published and no relay was hosted. The recorded group receipt 0x3dfdb6bdf8a11a81792129083642f706a9b4547a62d4d8ebbe3eceb645566a89 was not used. Escrow 0xb0d8Da3B7979120E6877016810D39a792a3Bdf90 was not touched. Courier did not carry that file.",
+  "transactions": {
+    "create": "0xa657aa638fcb31cfa54cadf19d59da5619241cccd7a20fc4fee762c697a8aa16",
+    "convert": "0F36FECEFFA1637D4559F6C26F04F89B7543221DC922912D6FA810FB30BB9D52",
+    "fund": "0x1bf8055d76fa8e1058a359ab8b7118e2128ae95f8fcb37e4405348a1804a3799",
+    "receipt": "0x95a37e72f573830a73e491de42d0f7da7ad33713c80ed35d8626103c90391452",
+    "deliver": "0xe98f67c12f88e65c389ac66064a83696ed6cbe0d73da28bea3c7b25779dd4895",
+    "release": "0x602ed45cda12d5c36e89e4f559e6e3ef754e2d50015a3e4eee68ab81c57e22d8"
+  }
+}
