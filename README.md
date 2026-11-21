@@ -336,8 +336,6 @@ On testnet, as recorded on 20 November 2026:
 Not in the repo yet, and not claimed:
 
 - A film and a featured image. The film can be recorded from https://havenesc.vercel.app/record.
-- `AI_USAGE.md`.
-- A fresh `.gas-snapshot` that includes `Vectors.t.sol`. The committed snapshot predates that test.
 - A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first.
 - Source verification on the explorer. The explorer has none. The compiler settings are in `foundry.toml`.
 
@@ -345,6 +343,7 @@ Not in the repo yet, and not claimed:
 
 Written during the fest, November 2026. It builds on:
 
+- **Haven family:** none yet. Steward and Courier use haven-pq-kit. Neither calls this escrow, and this escrow does not call them. [docs/kits.md](docs/kits.md) is the map. [AI_USAGE.md](AI_USAGE.md) says what a person decided.
 - **QoreChain kits:** `@qorechain/sdk`, `@qorechain/pqc`, `@qorechain/qoreseal`, `@qorechain/qoresign`, `@qorechain/mcp`, `@qorechain/qorescan`, and `@qorechain/evm`.
 - **haven-pq-kit v0.1.0:** https://github.com/datharnu/haven-pq-kit. `PqAuth` and `PqQuorum` are the signature checks. The submodule is pinned to commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`. Their interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr, Apache-2.0. The implementation was written for Haven.
 - **Meter:** the earlier rule that a stored payment line has one recipient. The idea was kept. The contracts were written for this chain.
