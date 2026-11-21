@@ -1,48 +1,50 @@
-/* Haven Escrow. A warm paper ledger, not Steward's cool vault.
-   The type is the Haven trio. The surface, the seal teal, and the two-name line are this product's. */
+/* Haven Escrow. Mercury quiet typography & spacing + Linear current-step clarity.
+   Buttons use ink. Accent #1f6f68 is reserved for the Haven wordmark, focus rings, and the current-step mark. */
 
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #161310;
-  --color-surface: #211c18;
-  --color-raise: #2c261f;
-  --color-ink: #f6f1ea;
-  --color-muted: #a3988c;
-  --color-faint: #6f655c;
-  --color-line: #3a322b;
-  --color-brand: #2a9d8f;
-  --color-brand-soft: rgb(42 157 143 / 0.14);
-  --color-on-brand: #071614;
-  --color-client: #7eb6c9;
-  --color-freelancer: #e0a15a;
-  --color-paid: #3d9a74;
-  --color-paid-soft: rgb(61 154 116 / 0.14);
-  --color-held: #c4a15a;
-  --color-held-soft: rgb(196 161 90 / 0.14);
-  --color-refused: #d4534a;
-  --color-refused-soft: rgb(212 83 74 / 0.12);
+  --color-canvas: #0e0f14;
+  --color-surface: #15161f;
+  --color-raise: #1e202c;
+  --color-ink: #f1f2f6;
+  --color-muted: #999da8;
+  --color-faint: #6c707c;
+  --color-line: #2a2c3a;
+  --color-action: #f1f2f6;
+  --color-on-action: #0e0f14;
+  --color-brand: #1f6f68;
+  --color-brand-soft: rgb(31 111 104 / 0.16);
+  --color-client: #6fa8dc;
+  --color-freelancer: #b79bc8;
+  --color-paid: #3da87e;
+  --color-paid-soft: rgb(61 168 126 / 0.14);
+  --color-held: #9aa3b5;
+  --color-held-soft: rgb(154 163 181 / 0.14);
+  --color-refused: #dc5a5a;
+  --color-refused-soft: rgb(220 90 90 / 0.14);
 }
 
 html[data-theme="light"] {
-  --color-canvas: #f7f1e8;
-  --color-surface: #fffaf3;
-  --color-raise: #efe6d8;
-  --color-ink: #1c1612;
-  --color-muted: #5e5348;
-  --color-faint: #7a6d60;
-  --color-line: #e4d8c8;
-  --color-brand: #0f6e63;
-  --color-brand-soft: rgb(15 110 99 / 0.1);
-  --color-on-brand: #f7f1e8;
-  --color-client: #1d5f78;
-  --color-freelancer: #8a4e12;
-  --color-paid: #0d6b45;
-  --color-paid-soft: rgb(13 107 69 / 0.1);
-  --color-held: #8a5a10;
-  --color-held-soft: rgb(138 90 16 / 0.1);
-  --color-refused: #9d2c28;
-  --color-refused-soft: rgb(157 44 40 / 0.1);
+  --color-canvas: #f3f0e8;
+  --color-surface: #fffdf8;
+  --color-raise: #e9e5db;
+  --color-ink: #14151e;
+  --color-muted: #55596a;
+  --color-faint: #73788a;
+  --color-line: #dcd6c8;
+  --color-action: #14151e;
+  --color-on-action: #fffdf8;
+  --color-brand: #1f6f68;
+  --color-brand-soft: rgb(31 111 104 / 0.12);
+  --color-client: #1f5f8b;
+  --color-freelancer: #5c3d78;
+  --color-paid: #167954;
+  --color-paid-soft: rgb(22 121 84 / 0.1);
+  --color-held: #4d5668;
+  --color-held-soft: rgb(77 86 104 / 0.1);
+  --color-refused: #b53434;
+  --color-refused-soft: rgb(181 52 52 / 0.1);
   color-scheme: light;
 }
 
@@ -51,8 +53,9 @@ html {
   color: var(--color-ink);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.55;
   color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
@@ -60,6 +63,7 @@ body {
   min-height: 100vh;
   background: var(--color-canvas);
   color: var(--color-ink);
+  overflow-x: clip;
 }
 
 ::selection {
@@ -88,13 +92,13 @@ body {
 }
 
 .rise {
-  animation: rise 600ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  animation: rise 500ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
