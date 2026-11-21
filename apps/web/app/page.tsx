@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PaymentLine } from "@/components/line";
+import { NoThirdName } from "@/components/third-name";
 import { ESCROWS, RECORDED, SCENES } from "@/lib/record";
 
 export default function Home() {
@@ -44,7 +45,10 @@ export default function Home() {
             </li>
           ))}
         </ol>
-        <PaymentLine />
+        <div className="grid min-w-0 gap-3">
+          <PaymentLine />
+          <NoThirdName />
+        </div>
       </div>
 
       <dl className="mt-10 grid gap-px overflow-hidden rounded-xl bg-line shadow-[inset_0_0_0_1px_var(--color-line)] sm:grid-cols-2">

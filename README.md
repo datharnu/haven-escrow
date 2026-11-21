@@ -329,14 +329,14 @@ On testnet, as recorded on 20 November 2026:
 - A dispute, a one-arbiter refusal, and a two-arbiter split paid to the two named parties.
 - An early timeout refused, then a timeout release after a real wait.
 - An evidence check of the recorded hashes.
+- A practice path on testnet, recorded in `deployments/practice.json`. Escrow `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90`. Create, fund, the receipt, and deliver are classical. The zero-signature release reverted. The classical open has no hash. Milestone 0 status is 2 and the escrow holds 100000 fUSD base units. Courier did not carry the file. HavenEscrow does not read DeliveryReceipts.
 - Two audit PDFs and the finding map.
 - `npm run cbom:check` passed locally on 21 November 2026. It caught the `ecrecover` fixture.
 - A GitHub Actions workflow at `.github/workflows/test.yml`. The contract and cryptography job went green on 21 November 2026 (run 44886746463). That run did not include the web smoke job, which is in the workflow now.
 
 Not in the repo yet, and not claimed:
 
-- A full practice path on testnet. `/practice` can send one after you confirm, including Try to steal the pay, a sealed file, and a Courier receipt of that file’s ciphertext hash. No throwaway run is recorded, so there is no Haven family line, and the QOR cost of each action has not been measured on a new escrow. The last `DeliveryReceipts.record` used 288262 gas.
-- No third name, as a panel. `resolve` takes `address[] who`. Those addresses sign the split. They are not paid: `_pay` in `src/HavenEscrow.sol` transfers only to the stored client or the stored freelancer. The check that was going to list address parameters stopped on `who`, on 21 November 2026.
+- A bytecode comparison inside the No third name panel. The panel lists the state-changing functions and reads the recorded fUSD transfers. It does not check the bytecode against the source. The Foundry tests and docs/AUDIT.md do.
 - The sealed file is on `/record` for scenes 1 and 3. The page recomputes the commitment from the published ciphertext and the three envelopes. It does not open the file, and it does not show a share or the file key. Escrow B's manifest is checked by the unit test and is not on the timeout scene.
 - A film. The shot list is [docs/DEMO.md](docs/DEMO.md). The featured image is [docs/featured.png](docs/featured.png). The film itself has not been recorded.
 - A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first. The practice page does not call it.
