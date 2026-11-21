@@ -240,10 +240,21 @@ async function waitForWindow(cosmos: string): Promise<void> {
   throw new Error("The window did not become live.");
 }
 
+function revertHex(value: unknown): Hex | undefined {
+  if (typeof value === "string" && /^0x[0-9a-fA-F]{8,}$/.test(value) && value.length % 2 === 0) return value as Hex;
+  if (value && typeof value === "object" && "data" in value) return revertHex((value as { data: unknown }).data);
+  return undefined;
+}
+
 function revertData(error: unknown): Hex | undefined {
   if (!(error instanceof BaseError)) return undefined;
   const raw = error.walk((item) => item instanceof RawContractError);
-  if (raw instanceof RawContractError && typeof raw.data === "string" && raw.data.startsWith("0x")) return raw.data as Hex;
+  if (raw instanceof RawContractError) {
+    const fromRaw = revertHex(raw.data);
+    if (fromRaw) return fromRaw;
+  }
+  const rpc = error.walk((item) => Boolean(item && typeof item === "object" && "data" in item && revertHex((item as { data: unknown }).data)));
+  if (rpc && typeof rpc === "object" && "data" in rpc) return revertHex((rpc as { data: unknown }).data);
   return undefined;
 }
 
