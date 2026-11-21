@@ -21,7 +21,7 @@ npm ci
 npm run evidence
 ```
 
-`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
+`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. On 21 November 2026 it printed 73 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
 
 `forge test` and `npm run test:ts` need no chain and no key. They use a mock of the precompiles. A passing test is not a testnet receipt.
 
@@ -329,7 +329,7 @@ On testnet, as recorded on 20 November 2026:
 - A dispute, a one-arbiter refusal, and a two-arbiter split paid to the two named parties.
 - An early timeout refused, then a timeout release after a real wait.
 - An evidence check of the recorded hashes.
-- A practice path on testnet, recorded in `deployments/practice.json`. Escrow `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90`. Create, fund, the receipt, and deliver are classical. The zero-signature release reverted. The classical open has no hash. Milestone 0 status is 2 and the escrow holds 100000 fUSD base units. Courier did not carry the file. HavenEscrow does not read DeliveryReceipts.
+- A practice path on testnet, recorded on 21 November 2026 in `deployments/practice.json`. Escrow `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90`. Create, fund, the receipt, and deliver are classical. The zero-signature release reverted. The classical open has no hash. Milestone 0 status is 2 and the escrow holds 100000 fUSD base units. Courier did not carry the file. HavenEscrow does not read DeliveryReceipts.
 - Two audit PDFs and the finding map.
 - `npm run cbom:check` passed locally on 21 November 2026. It caught the `ecrecover` fixture.
 - A GitHub Actions workflow at `.github/workflows/test.yml`. The contract and cryptography job went green on 21 November 2026 (run 44886746463). That run did not include the web smoke job, which is in the workflow now.
