@@ -337,12 +337,12 @@ function sign(account: UnifiedAccount, fields: Parameters<typeof encodeAuthMessa
 }
 
 async function nonces(escrow: Address): Promise<{ client: bigint; freelancer: bigint; arbiter: bigint }> {
-  const result = (await publicClient().readContract({ address: escrow, abi: escrowAbi, functionName: "nonces" })) as {
-    clientNonce: bigint;
-    freelancerNonce: bigint;
-    arbiterNonce: bigint;
-  };
-  return { client: result.clientNonce, freelancer: result.freelancerNonce, arbiter: result.arbiterNonce };
+  const row = (await publicClient().readContract({ address: escrow, abi: escrowAbi, functionName: "nonces" })) as readonly [
+    bigint,
+    bigint,
+    bigint,
+  ];
+  return { client: row[0], freelancer: row[1], arbiter: row[2] };
 }
 
 export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promise<Address> {
