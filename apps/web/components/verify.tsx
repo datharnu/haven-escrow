@@ -101,7 +101,7 @@ export function VerifyBar({
           </button>
         ) : null}
         <p className="text-[13px] text-muted sm:ml-2">
-          Reads <NetworkName /> directly. Sends nothing. The verdict is the chain&apos;s, not the copy.
+          Reads qorechain-diana directly. Sends nothing. The verdict is the chain&apos;s, not the copy.
         </p>
       </div>
       {progress ? (

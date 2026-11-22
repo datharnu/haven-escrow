@@ -11,7 +11,6 @@ import {
   isRegisteredPqcKey,
   openEvmWindowMsg,
   pqcSign,
-  QoreTxError,
   qorechainRegistry,
   signProofOfPossession,
   type EncodeObject,
@@ -38,10 +37,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { ACTIONS, CHAIN_ID, NETWORK, deliverArgs, disputeArgs, encodeAuthMessage, escrowAbi, quorumAction, releaseArgs, resolveArgs } from "./verify";
-import { DELIVERY_RECEIPTS, RECEIPT_COUNTER, RECORDED_RECEIPT, commitmentForCiphertext, conversationFor, encodeReceipt, sealPracticeFile } from "./practice-seal";
-import { openFile, sealFile } from "../vendor/courier/file";
-import { signReceipt } from "../vendor/courier/receipt";
-import { utf8 } from "../vendor/courier/bytes";
+import { DELIVERY_RECEIPTS, RECEIPT_COUNTER, RECORDED_RECEIPT, encodeReceipt, sealPracticeFile } from "./practice-seal";
 import {
   FACTORY,
   FUSD,
@@ -226,7 +222,8 @@ async function broadcast(
   signMode: "hybrid" | "classical",
   registry?: ReturnType<typeof qorechainRegistry>,
 ): Promise<{ hash: string; code: number; log: string; sequence: bigint }> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+  let slipped = false;
+  for (;;) {
     const auth = await accountAuth(account);
     const signer = new EthNativeSigner(account, { signMode, rest: REST, signBytesVersion: "auto", registry });
     try {
@@ -237,34 +234,20 @@ async function broadcast(
         accountNumber: auth.accountNumber,
         sequence: auth.sequence,
       });
-      const log = result.rawLog ?? "";
-      if (result.code === 0) {
-        noteUsed(account.cosmos, auth.sequence);
-        return { hash: result.transactionHash, code: 0, log, sequence: auth.sequence };
-      }
-      if (!sequenceSlipped(log)) {
-        return { hash: result.transactionHash, code: result.code, log, sequence: auth.sequence };
-      }
-      heldSequence.delete(account.cosmos);
-      if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        continue;
-      }
-      throw new Error(SEQUENCE_SLIP);
+      noteUsed(account.cosmos, auth.sequence);
+      return { hash: result.transactionHash, code: 0, log: result.rawLog ?? "", sequence: auth.sequence };
     } catch (caught) {
       const log = caught instanceof Error ? caught.message : "The node refused the transaction.";
-      if (sequenceSlipped(log)) {
+      if (!slipped && sequenceSlipped(log)) {
         heldSequence.delete(account.cosmos);
-        if (attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 1200));
-          continue;
-        }
-        throw new Error(SEQUENCE_SLIP);
+        slipped = true;
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        continue;
       }
+      if (sequenceSlipped(log)) throw new Error(SEQUENCE_SLIP);
       throw caught;
     }
   }
-  throw new Error(SEQUENCE_SLIP);
 }
 
 export async function makePhrases(): Promise<Record<Role, string>> {
@@ -340,21 +323,10 @@ async function waitForWindow(cosmos: string): Promise<void> {
   throw new Error("The window did not become live.");
 }
 
-function revertHex(value: unknown): Hex | undefined {
-  if (typeof value === "string" && /^0x[0-9a-fA-F]{8,}$/.test(value) && value.length % 2 === 0) return value as Hex;
-  if (value && typeof value === "object" && "data" in value) return revertHex((value as { data: unknown }).data);
-  return undefined;
-}
-
 function revertData(error: unknown): Hex | undefined {
   if (!(error instanceof BaseError)) return undefined;
   const raw = error.walk((item) => item instanceof RawContractError);
-  if (raw instanceof RawContractError) {
-    const fromRaw = revertHex(raw.data);
-    if (fromRaw) return fromRaw;
-  }
-  const rpc = error.walk((item) => Boolean(item && typeof item === "object" && "data" in item && revertHex((item as { data: unknown }).data)));
-  if (rpc && typeof rpc === "object" && "data" in rpc) return revertHex((rpc as { data: unknown }).data);
+  if (raw instanceof RawContractError && typeof raw.data === "string" && raw.data.startsWith("0x")) return raw.data as Hex;
   return undefined;
 }
 
@@ -466,23 +438,15 @@ async function inWindow(
 }
 
 export async function classicalWindow(account: UnifiedAccount): Promise<{ refused: boolean; detail: string }> {
-  try {
-    const sent = await broadcast(
-      account,
-      [openEvmWindowMsg({ sender: account.cosmos, blocks: 120, maxTxs: 1, maxValue: "2000000", allowedTargets: [FACTORY] })],
-      "classical",
-    );
-    if (sent.code === 0) {
-      throw new Error("The classical key opened a window. Stop. That must not succeed.");
-    }
-    if (sent.code !== 20) {
-      throw new Error(sent.log || `The classical open failed with code ${sent.code}.`);
-    }
-    return { refused: true, detail: sent.log || "Refused with code 20." };
-  } catch (error) {
-    if (!(error instanceof QoreTxError) || error.code !== 20) throw error;
-    return { refused: true, detail: error.rawLog ? `Refused with code 20. ${error.rawLog}` : "Refused with code 20." };
+  const sent = await broadcast(
+    account,
+    [openEvmWindowMsg({ sender: account.cosmos, blocks: 120, maxTxs: 1, maxValue: "2000000", allowedTargets: [FACTORY] })],
+    "classical",
+  );
+  if (sent.code === 0) {
+    throw new Error("The classical key opened a window. Stop. That must not succeed.");
   }
+  return { refused: true, detail: sent.log || `Refused with code ${sent.code}.` };
 }
 
 async function now(): Promise<bigint> {
@@ -513,7 +477,7 @@ async function nonces(escrow: Address): Promise<{ client: bigint; freelancer: bi
   };
 }
 
-export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promise<{ escrow: Address; hash: Hex }> {
+export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promise<Address> {
   const timestamp = await now();
   const terms = practiceTerms({
     client: getAddress(parties.client.evm),
@@ -536,7 +500,7 @@ export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promi
     if (log.address.toLowerCase() !== FACTORY.toLowerCase()) continue;
     try {
       const decoded = decodeEventLog({ abi: factoryAbi, data: log.data, topics: log.topics });
-      if (decoded.eventName === "EscrowCreated") return { escrow: getAddress(decoded.args.escrow), hash };
+      if (decoded.eventName === "EscrowCreated") return getAddress(decoded.args.escrow);
     } catch {
       continue;
     }
@@ -544,7 +508,7 @@ export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promi
   throw new Error("The factory receipt had no EscrowCreated log.");
 }
 
-export async function convertAndFund(client: UnifiedAccount, escrow: Address): Promise<{ convertHash: string; fundHash: Hex }> {
+export async function convertAndFund(client: UnifiedAccount, escrow: Address): Promise<void> {
   const sent = await broadcast(
     client,
     [{
@@ -559,22 +523,8 @@ export async function convertAndFund(client: UnifiedAccount, escrow: Address): P
     convertRegistry,
   );
   if (sent.code !== 0) throw new Error(sent.log || "The fUSD conversion was refused.");
-  await waitForTokens(escrow);
-  const fundHash = await fundMilestone(client, escrow);
-  return { convertHash: sent.hash, fundHash };
-}
-
-async function waitForTokens(escrow: Address): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    if ((await tokenBalance(escrow)) >= PRACTICE_AMOUNT) return;
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
-  throw new Error("The 0.1 fUSD was not in the escrow. The release was not sent.");
-}
-
-async function fundMilestone(client: UnifiedAccount, escrow: Address): Promise<Hex> {
   const data = encodeFunctionData({ abi: escrowAbi, functionName: "fund" });
-  return inWindow(client, escrow, "call", data, "Fund");
+  await inWindow(client, escrow, "call", data, "Fund");
 }
 
 const receiptAbi = parseAbi([
@@ -633,7 +583,7 @@ export async function deliver(freelancer: UnifiedAccount, escrow: Address): Prom
   await deliverCommitment(freelancer, escrow, commitment);
 }
 
-export async function deliverCommitment(freelancer: UnifiedAccount, escrow: Address, commitment: Hex): Promise<Hex> {
+export async function deliverCommitment(freelancer: UnifiedAccount, escrow: Address, commitment: Hex): Promise<void> {
   guardPractice(freelancer, escrow);
   const nonce = (await nonces(escrow)).freelancer;
   const timestamp = await now();
@@ -652,10 +602,10 @@ export async function deliverCommitment(freelancer: UnifiedAccount, escrow: Addr
     functionName: "deliver",
     args: [0n, commitment, deadline, signature],
   });
-  return inWindow(freelancer, escrow, "call", data, "Deliver");
+  await inWindow(freelancer, escrow, "call", data, "Deliver");
 }
 
-export async function release(client: UnifiedAccount, escrow: Address): Promise<{ hash: Hex; signature: Hex }> {
+export async function release(client: UnifiedAccount, escrow: Address): Promise<Hex> {
   const amount = PRACTICE_AMOUNT;
   const nonce = (await nonces(escrow)).client;
   const deadline = (await now()) + 3600n;
@@ -673,8 +623,8 @@ export async function release(client: UnifiedAccount, escrow: Address): Promise<
     functionName: "release",
     args: [0n, deadline, signature],
   });
-  const hash = await inWindow(client, escrow, "call", data, "Release");
-  return { hash, signature };
+  await inWindow(client, escrow, "call", data, "Release");
+  return signature;
 }
 
 export async function previewCall(to: Address, data: Hex): Promise<{ reverted: boolean; name: string }> {
@@ -883,180 +833,4 @@ export async function stealPay(client: UnifiedAccount, escrow: Address, releaseS
       "Not called. release takes a milestone, a deadline, and a signature. resolve takes the signers in address[] who. The transfer inside the contract goes to the stored client or the stored freelancer.",
   });
   return lines;
-}
-
-const LEFT_ALONE = getAddress("0xb0d8Da3B7979120E6877016810D39a792a3Bdf90");
-const CARRIED_FILE = "Courier carried this file.";
-const transferAbi = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
-
-export type CourierPay = {
-  escrow: Address;
-  createHash: Hex;
-  convertHash: string;
-  fundHash: Hex;
-  conversationId: Hex;
-  counter: number;
-  ciphertextHash: Hex;
-  commitment: Hex;
-  recordHash: Hex;
-  deliverHash: Hex;
-  releaseHash: Hex;
-  payee: Address;
-};
-
-function leaveAlone(escrow: Address): void {
-  if (getAddress(escrow) === LEFT_ALONE) throw new Error("This path does not touch the first practice escrow. The release was not sent.");
-}
-
-export type CarryStart = { escrow: Address; createHash: Hex; convertHash: string; fundHash?: Hex };
-
-/** A new escrow. Courier seals the file in this browser. The receipt is recorded, then the same ciphertext is delivered, then the client releases. */
-export async function courierPays(
-  parties: Record<Role, UnifiedAccount>,
-  resume?: CarryStart,
-  onStarted?: (partial: CarryStart) => void,
-): Promise<CourierPay> {
-  const client = parties.client;
-  const freelancer = parties.freelancer;
-  for (const role of ROLES) {
-    if (isForbidden(parties[role].evm)) {
-      throw new Error("This path does not use a recorded account or a recorded escrow.");
-    }
-  }
-  let escrow: Address;
-  let createHash: Hex;
-  let convertHash: string;
-  let fundHash: Hex;
-  if (resume) {
-    escrow = getAddress(resume.escrow);
-    createHash = resume.createHash;
-    convertHash = resume.convertHash;
-    leaveAlone(escrow);
-    guardPractice(client, escrow);
-    const view = await dealStatus(escrow);
-    if (view.client !== getAddress(client.evm) || view.freelancer !== getAddress(freelancer.evm)) {
-      throw new Error("The payee would not be the stored freelancer. The release was not sent.");
-    }
-    if (view.status === 0) {
-      await waitForTokens(escrow);
-      fundHash = await fundMilestone(client, escrow);
-    } else if (view.status === 1 && resume.fundHash) {
-      fundHash = resume.fundHash;
-    } else {
-      throw new Error("This escrow is not waiting for the file. The release was not sent.");
-    }
-  } else {
-    const created = await createEscrow(parties);
-    escrow = created.escrow;
-    createHash = created.hash;
-    leaveAlone(escrow);
-    guardPractice(client, escrow);
-    onStarted?.({ escrow, createHash, convertHash: "" });
-    const funded = await convertAndFund(client, escrow);
-    convertHash = funded.convertHash;
-    fundHash = funded.fundHash;
-  }
-  onStarted?.({ escrow, createHash, convertHash, fundHash });
-
-  const plain = utf8(CARRIED_FILE);
-  const carried = sealFile(plain);
-  let opened: Uint8Array;
-  try {
-    opened = openFile(carried.blob, carried.key);
-  } catch {
-    carried.key.fill(0);
-    throw new Error("The client could not open the file. The release was not sent.");
-  }
-  const openedFile = opened.length === plain.length && opened.every((byte, index) => byte === plain[index]);
-  if (!openedFile) {
-    carried.key.fill(0);
-    throw new Error("The client could not open the file. The release was not sent.");
-  }
-  const ciphertextHash = keccak256(carried.blob.ciphertext as Hex);
-  const conversationId = conversationFor(escrow);
-  const recipient = getAddress(client.evm);
-  const signed = signReceipt(client.pqc.secretKey, {
-    conversationId,
-    counter: RECEIPT_COUNTER,
-    ciphertextHash,
-    recipient,
-  });
-  if (signed.ciphertextHash.toLowerCase() !== ciphertextHash.toLowerCase()) {
-    carried.key.fill(0);
-    throw new Error("The receipt hash and the delivered file differ. The release was not sent.");
-  }
-  const commitment = await commitmentForCiphertext(escrow, carried.blob.ciphertext as Hex, carried.key);
-  carried.key.fill(0);
-
-  const recordData = encodeFunctionData({
-    abi: receiptAbi,
-    functionName: "record",
-    args: [conversationId, BigInt(RECEIPT_COUNTER), ciphertextHash, recipient, signed.signature as Hex],
-  });
-  const recordHash = await inWindow(client, DELIVERY_RECEIPTS, "call", recordData, "Receipt");
-  if (recordHash.toLowerCase() === RECORDED_RECEIPT.toLowerCase()) {
-    throw new Error("The recorded group receipt was reused. The release was not sent.");
-  }
-  const deliverHash = await deliverCommitment(freelancer, escrow, commitment);
-  const stored = (await publicClient().readContract({
-    address: DELIVERY_RECEIPTS,
-    abi: receiptAbi,
-    functionName: "receipt",
-    args: [conversationId, BigInt(RECEIPT_COUNTER), ciphertextHash, recipient],
-  })) as readonly [Address, bigint];
-  if (stored[1] === 0n) throw new Error("The check could not be read. The release was not sent.");
-  const payee = getAddress(
-    (await publicClient().readContract({ address: escrow, abi: escrowAbi, functionName: "freelancer" })) as string,
-  );
-  if (payee !== getAddress(freelancer.evm)) throw new Error("The payee would not be the stored freelancer. The release was not sent.");
-  const released = await release(client, escrow);
-  const mined = await publicClient().getTransactionReceipt({ hash: released.hash });
-  let paid: Address | null = null;
-  for (const log of mined.logs) {
-    if (getAddress(log.address) !== FUSD) continue;
-    try {
-      const decoded = decodeEventLog({ abi: transferAbi, data: log.data, topics: log.topics });
-      if (decoded.eventName !== "Transfer") continue;
-      const args = decoded.args as { from?: string; to?: string; value?: bigint };
-      if (!args.from || !args.to || args.value !== PRACTICE_AMOUNT) continue;
-      if (getAddress(args.from) !== escrow) continue;
-      paid = getAddress(args.to);
-    } catch {
-      continue;
-    }
-  }
-  if (paid !== payee) throw new Error("The 0.1 fUSD did not go to the stored freelancer.");
-  return {
-    escrow,
-    createHash,
-    convertHash,
-    fundHash,
-    conversationId,
-    counter: RECEIPT_COUNTER,
-    ciphertextHash,
-    commitment,
-    recordHash,
-    deliverHash,
-    releaseHash: released.hash,
-    payee,
-  };
-}
-
-export async function readCarriedReceipt(args: {
-  conversationId: Hex;
-  counter: number;
-  ciphertextHash: Hex;
-  recipient: Address;
-}): Promise<bigint | null> {
-  try {
-    const stored = (await publicClient().readContract({
-      address: DELIVERY_RECEIPTS,
-      abi: receiptAbi,
-      functionName: "receipt",
-      args: [args.conversationId, BigInt(args.counter), args.ciphertextHash, args.recipient],
-    })) as readonly [Address, bigint];
-    return stored[1];
-  } catch {
-    return null;
-  }
 }
