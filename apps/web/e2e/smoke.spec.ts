@@ -5,11 +5,11 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open the record" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open app" })).toBeVisible();
     let overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
 
-    await page.getByRole("link", { name: "Open the record" }).click();
+    await page.getByRole("link", { name: "Open app" }).click();
     await expect(page.getByRole("heading", { name: /What the chain/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "The sealed file" })).toBeVisible();
     await expect(page.getByText("SignatureInvalid").first()).toBeHidden();
@@ -34,13 +34,15 @@ test("a refusal filter can be empty, and an unknown hash is refused", async ({ p
   await expect(page.getByText("That hash is not in this record.")).toBeVisible();
 });
 
-test("the light theme stays on after leaving the page", async ({ page }) => {
+test("record and practice live in the app sidebar", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Switch to light" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await page.getByRole("link", { name: "Open the record" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.getByRole("button", { name: "Switch to dark" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Record" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Switch to light/ })).toHaveCount(0);
+  await page.getByRole("link", { name: "Open app" }).click();
+  await expect(page.getByRole("link", { name: "Record" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Practice" })).toBeVisible();
+  await page.getByRole("link", { name: "Practice" }).click();
+  await expect(page.getByRole("heading", { name: /refuse/ })).toBeVisible();
 });
 
 test("the known release hash opens that step", async ({ page }) => {

@@ -75,6 +75,27 @@ const factoryAbi = parseAbi([
   "event EscrowCreated(address indexed escrow, address indexed client, address indexed freelancer, bytes32 termsHash)",
 ]);
 
+/** Errors the factory create can bubble from the escrow constructor and the PQC precompile. */
+const callErrors = parseAbi([
+  "error KeyNotRegistered(address account)",
+  "error WrongAlgorithm(address account, uint8 algorithmId)",
+  "error PossessionNotProven(address account)",
+  "error BadKeyLength(address account, uint256 length)",
+  "error PqPrecompileUnavailable()",
+  "error Unsorted(address previous, address next)",
+  "error ZeroAddress()",
+  "error SameParty()",
+  "error PartyIsArbiter(address who)",
+  "error BadMilestoneCount(uint256 count)",
+  "error EscrowLengthMismatch()",
+  "error ZeroAmount(uint256 m)",
+  "error BadDeadline(uint256 m)",
+  "error BadPeriod()",
+  "error BadSplit(uint16 splitBps)",
+  "error BadArbiterCount(uint256 count)",
+  "error SignatureInvalid()",
+]);
+
 const erc20Abi = parseAbi(["function balanceOf(address account) view returns (uint256)"]);
 
 const ConvertCoin = {
@@ -120,10 +141,21 @@ async function accountAuth(account: UnifiedAccount): Promise<{ accountNumber: bi
     throw new Error("This identity is not on chain yet. It needs test QOR before it can register.");
   }
   if (!response.ok) throw new Error(NETWORK);
-  const body = (await response.json()) as { account?: { account_number?: string } };
-  if (!body.account?.account_number) throw new Error("The account is on chain but has no account number.");
-  const sequence = await publicClient().getTransactionCount({ address: getAddress(account.evm), blockTag: "pending" });
-  return { accountNumber: BigInt(body.account.account_number), sequence: BigInt(sequence) };
+  const body = (await response.json()) as {
+    account?: { account_number?: string; sequence?: string; base_account?: { account_number?: string; sequence?: string } };
+  };
+  const accountNumber = body.account?.account_number ?? body.account?.base_account?.account_number;
+  if (!accountNumber) throw new Error("The account is on chain but has no account number.");
+  const restSequence = body.account?.sequence ?? body.account?.base_account?.sequence;
+  const pending = await publicClient().getTransactionCount({ address: getAddress(account.evm), blockTag: "pending" });
+  return {
+    accountNumber: BigInt(accountNumber),
+    sequence: chooseSequence(
+      restSequence === undefined ? null : BigInt(restSequence),
+      BigInt(pending),
+      heldSequence.get(account.cosmos) ?? null,
+    ),
+  };
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -156,22 +188,66 @@ async function broadcastTx(tx: Uint8Array): Promise<{ code: number; transactionH
 
 const transport: EthBroadcaster = { broadcastTx };
 
+/** Shown when a send is signed with a sequence the chain has already passed. */
+export const SEQUENCE_SLIP =
+  "This send did not land. The account had already counted the previous one. Click the action again.";
+
+/**
+ * The next sequence to sign with. The REST account can lag an EVM send, and the
+ * EVM nonce can lag a Cosmos send, so the higher of the two is the live one.
+ * `held` is the sequence this page already consumed and the RPCs may not show yet.
+ */
+export function chooseSequence(rest: bigint | null, pending: bigint, held: bigint | null): bigint {
+  let sequence = pending;
+  if (rest !== null && rest > sequence) sequence = rest;
+  if (held !== null && held > sequence) sequence = held;
+  return sequence;
+}
+
+const heldSequence = new Map<string, bigint>();
+
+function noteUsed(cosmos: string, used: bigint) {
+  const next = used + 1n;
+  const current = heldSequence.get(cosmos);
+  if (current === undefined || next > current) heldSequence.set(cosmos, next);
+}
+
+function sequenceSlipped(log: string) {
+  return /account sequence mismatch|incorrect account sequence/.test(log);
+}
+
 async function broadcast(
   account: UnifiedAccount,
   messages: readonly EncodeObject[],
   signMode: "hybrid" | "classical",
   registry?: ReturnType<typeof qorechainRegistry>,
-): Promise<{ hash: string; code: number; log: string }> {
-  const auth = await accountAuth(account);
-  const signer = new EthNativeSigner(account, { signMode, rest: REST, signBytesVersion: "auto", registry });
-  const result = await signer.signAndBroadcast(transport, {
-    chainId: CHAIN,
-    messages,
-    fee: { amount: [...NATIVE_FEE.amount], gas: NATIVE_FEE.gas },
-    accountNumber: auth.accountNumber,
-    sequence: auth.sequence,
-  });
-  return { hash: result.transactionHash, code: result.code, log: result.rawLog ?? "" };
+): Promise<{ hash: string; code: number; log: string; sequence: bigint }> {
+  let slipped = false;
+  for (;;) {
+    const auth = await accountAuth(account);
+    const signer = new EthNativeSigner(account, { signMode, rest: REST, signBytesVersion: "auto", registry });
+    try {
+      const result = await signer.signAndBroadcast(transport, {
+        chainId: CHAIN,
+        messages,
+        fee: { amount: [...NATIVE_FEE.amount], gas: NATIVE_FEE.gas },
+        accountNumber: auth.accountNumber,
+        sequence: auth.sequence,
+      });
+      noteUsed(account.cosmos, auth.sequence);
+      return { hash: result.transactionHash, code: 0, log: result.rawLog ?? "", sequence: auth.sequence };
+    } catch (caught) {
+      const log = caught instanceof Error ? caught.message : "The node refused the transaction.";
+      if (!slipped && sequenceSlipped(log)) {
+        heldSequence.delete(account.cosmos);
+        slipped = true;
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        continue;
+      }
+      if (sequenceSlipped(log)) throw new Error(SEQUENCE_SLIP);
+      throw caught;
+    }
+  }
 }
 
 export async function makePhrases(): Promise<Record<Role, string>> {
@@ -193,7 +269,7 @@ export async function accountsFrom(phrases: Record<Role, string>): Promise<Recor
   return out;
 }
 
-export async function readUqor(cosmos: string): Promise<bigint> {
+export async function readCoin(cosmos: string, denom: string): Promise<bigint> {
   let response: Response;
   try {
     response = await fetch(`${REST}/cosmos/bank/v1beta1/balances/${cosmos}`);
@@ -203,7 +279,15 @@ export async function readUqor(cosmos: string): Promise<bigint> {
   if (response.status === 404) return 0n;
   if (!response.ok) throw new Error(NETWORK);
   const body = (await response.json()) as { balances?: { denom: string; amount: string }[] };
-  return BigInt(body.balances?.find((coin) => coin.denom === "uqor")?.amount ?? "0");
+  return BigInt(body.balances?.find((coin) => coin.denom === denom)?.amount ?? "0");
+}
+
+export async function readUqor(cosmos: string): Promise<bigint> {
+  return readCoin(cosmos, "uqor");
+}
+
+export async function readFusd(cosmos: string): Promise<bigint> {
+  return readCoin(cosmos, FUSD_DENOM);
 }
 
 export async function registered(account: UnifiedAccount): Promise<boolean> {
@@ -247,17 +331,48 @@ function revertData(error: unknown): Hex | undefined {
 }
 
 export function errorName(data: Hex): string {
-  try {
-    return decodeErrorResult({ abi: escrowAbi, data }).errorName;
-  } catch {
-    return "undecoded";
+  for (const abi of [escrowAbi, callErrors]) {
+    try {
+      return decodeErrorResult({ abi, data }).errorName;
+    } catch {
+      continue;
+    }
   }
+  return "undecoded";
+}
+
+/** A revert the page can show. Never includes the call arguments. */
+export function plainRevert(data: Hex): string {
+  for (const abi of [callErrors, escrowAbi]) {
+    try {
+      const decoded = decodeErrorResult({ abi, data });
+      if (decoded.errorName === "KeyNotRegistered") {
+        const who = decoded.args?.[0] ?? "this address";
+        return `The contract refused this: KeyNotRegistered for ${who}. Register the five identities first.`;
+      }
+      if (decoded.errorName === "WrongStatus") {
+        const code = Number(decoded.args?.[1]);
+        const word = STATUS_WORD[code] ?? "in another state";
+        return `The milestone is ${word}. This action does not apply to that state.`;
+      }
+      return `The contract refused this: ${decoded.errorName}.`;
+    } catch {
+      continue;
+    }
+  }
+  return "The contract refused this before it was sent.";
 }
 
 async function priced(kind: WindowKind, from: Address, to: Address, data: Hex, label: string) {
   const client = publicClient();
   const gasPrice = await client.getGasPrice();
-  const estimated = await client.estimateGas({ account: from, to, data });
+  let estimated: bigint;
+  try {
+    estimated = await client.estimateGas({ account: from, to, data });
+  } catch (error) {
+    const dataHex = revertData(error);
+    throw new Error(dataHex ? plainRevert(dataHex) : "The contract refused this before it was sent.");
+  }
   const buffered = estimated + estimated / 5n;
   const gas = evmWindowCost({ gas: buffered, maxFeePerGas: gasPrice }) <= (WINDOW_CAP[kind] * 66n) / 100n ? buffered : estimated;
   const budget = evmWindowCost({ gas, maxFeePerGas: gasPrice });
@@ -265,17 +380,24 @@ async function priced(kind: WindowKind, from: Address, to: Address, data: Hex, l
   return { gas, gasPrice, budget };
 }
 
-async function sendEvm(account: UnifiedAccount, to: Address, data: Hex, gas: bigint, gasPrice: bigint): Promise<Hex> {
+async function submitEvm(account: UnifiedAccount, to: Address, data: Hex, gas: bigint, gasPrice: bigint, nonce: bigint) {
   const signer = privateKeyToAccount(account.privateKey as Hex);
   const wallet = createWalletClient({ account: signer, chain: diana, transport: http(diana.rpcUrls.default.http[0]) });
   const hash = await wallet.sendTransaction({
     to,
     data,
     gas,
+    nonce: Number(nonce),
     maxFeePerGas: gasPrice,
     maxPriorityFeePerGas: gasPrice,
   });
+  noteUsed(account.cosmos, nonce);
   const receipt = await publicClient().waitForTransactionReceipt({ hash });
+  return { hash, receipt };
+}
+
+async function sendEvm(account: UnifiedAccount, to: Address, data: Hex, gas: bigint, gasPrice: bigint, nonce: bigint): Promise<Hex> {
+  const { hash, receipt } = await submitEvm(account, to, data, gas, gasPrice, nonce);
   const cost = weiToUqorCeil(receipt.gasUsed * receipt.effectiveGasPrice);
   if (receipt.status !== "success") {
     throw new Error(`The transaction reverted. ${hash}. It cost ${cost} uqor.`);
@@ -305,7 +427,7 @@ async function inWindow(
   let hash: Hex = "0x";
   try {
     await waitForWindow(account.cosmos);
-    hash = await sendEvm(account, target, data, price.gas, price.gasPrice);
+    hash = await sendEvm(account, target, data, price.gas, price.gasPrice, opened.sequence + 1n);
   } catch (error) {
     bodyError = error;
   }
@@ -336,13 +458,23 @@ function sign(account: UnifiedAccount, fields: Parameters<typeof encodeAuthMessa
   return toHex(pqcSign(account.pqc.secretKey, hexToBytes(encodeAuthMessage(fields))));
 }
 
+/** The node returns the three nonces as a list. Some decoders also name them. */
+export function nonceFrom(result: unknown, index: 0 | 1 | 2, name: "clientNonce" | "freelancerNonce" | "arbiterNonce"): bigint {
+  if (Array.isArray(result) && typeof result[index] === "bigint") return result[index];
+  if (result && typeof result === "object" && name in result) {
+    const value = (result as Record<string, unknown>)[name];
+    if (typeof value === "bigint") return value;
+  }
+  throw new Error("The escrow did not return its nonces.");
+}
+
 async function nonces(escrow: Address): Promise<{ client: bigint; freelancer: bigint; arbiter: bigint }> {
-  const result = (await publicClient().readContract({ address: escrow, abi: escrowAbi, functionName: "nonces" })) as {
-    clientNonce: bigint;
-    freelancerNonce: bigint;
-    arbiterNonce: bigint;
+  const result = await publicClient().readContract({ address: escrow, abi: escrowAbi, functionName: "nonces" });
+  return {
+    client: nonceFrom(result, 0, "clientNonce"),
+    freelancer: nonceFrom(result, 1, "freelancerNonce"),
+    arbiter: nonceFrom(result, 2, "arbiterNonce"),
   };
-  return { client: result.clientNonce, freelancer: result.freelancerNonce, arbiter: result.arbiterNonce };
 }
 
 export async function createEscrow(parties: Record<Role, UnifiedAccount>): Promise<Address> {
@@ -640,17 +772,9 @@ async function revertInWindow(account: UnifiedAccount, target: Address, data: He
     await waitForWindow(account.cosmos);
     const preview = await previewCall(target, data);
     if (!preview.reverted) throw new Error(`${label} no longer reverts. Stop. The call was not sent.`);
-    const signer = privateKeyToAccount(account.privateKey as Hex);
-    const wallet = createWalletClient({ account: signer, chain: diana, transport: http(diana.rpcUrls.default.http[0]) });
-    hash = await wallet.sendTransaction({
-      to: target,
-      data,
-      gas: REFUSAL_GAS,
-      maxFeePerGas: gasPrice,
-      maxPriorityFeePerGas: gasPrice,
-    });
-    const receipt = await publicClient().waitForTransactionReceipt({ hash });
-    if (receipt.status !== "reverted") {
+    const sent = await submitEvm(account, target, data, REFUSAL_GAS, gasPrice, opened.sequence + 1n);
+    hash = sent.hash;
+    if (sent.receipt.status !== "reverted") {
       throw new Error(`${label} was mined as a success. ${hash}. Stop.`);
     }
   } catch (error) {

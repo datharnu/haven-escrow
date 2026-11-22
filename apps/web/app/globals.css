@@ -1,51 +1,28 @@
-/* Haven Escrow. Mercury quiet typography & spacing + Linear current-step clarity.
-   Buttons use ink. Accent #1f6f68 is reserved for the Haven wordmark, focus rings, and the current-step mark. */
+/* Haven Escrow. Surfaces match the dark hero field: #08090a, text #e2e4e7, icons #9c9da1, hairline #2e2e32.
+   #1f6f68 stays on the wordmark and the current step. There is no light theme. */
 
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #0e0f14;
-  --color-surface: #15161f;
-  --color-raise: #1e202c;
-  --color-ink: #f1f2f6;
-  --color-muted: #999da8;
-  --color-faint: #6c707c;
-  --color-line: #2a2c3a;
-  --color-action: #f1f2f6;
-  --color-on-action: #0e0f14;
+  --color-canvas: #08090a;
+  --color-surface: #101113;
+  --color-raise: #1c1d22;
+  --color-ink: #e2e4e7;
+  --color-muted: #9c9da1;
+  --color-faint: #62666d;
+  --color-line: #2e2e32;
+  --color-action: #ffffff;
+  --color-on-action: #08090a;
   --color-brand: #1f6f68;
   --color-brand-soft: rgb(31 111 104 / 0.16);
-  --color-client: #6fa8dc;
-  --color-freelancer: #b79bc8;
-  --color-paid: #3da87e;
-  --color-paid-soft: rgb(61 168 126 / 0.14);
-  --color-held: #9aa3b5;
-  --color-held-soft: rgb(154 163 181 / 0.14);
-  --color-refused: #dc5a5a;
-  --color-refused-soft: rgb(220 90 90 / 0.14);
-}
-
-html[data-theme="light"] {
-  --color-canvas: #f3f0e8;
-  --color-surface: #fffdf8;
-  --color-raise: #e9e5db;
-  --color-ink: #14151e;
-  --color-muted: #55596a;
-  --color-faint: #73788a;
-  --color-line: #dcd6c8;
-  --color-action: #14151e;
-  --color-on-action: #fffdf8;
-  --color-brand: #1f6f68;
-  --color-brand-soft: rgb(31 111 104 / 0.12);
-  --color-client: #1f5f8b;
-  --color-freelancer: #5c3d78;
-  --color-paid: #167954;
-  --color-paid-soft: rgb(22 121 84 / 0.1);
-  --color-held: #4d5668;
-  --color-held-soft: rgb(77 86 104 / 0.1);
-  --color-refused: #b53434;
-  --color-refused-soft: rgb(181 52 52 / 0.1);
-  color-scheme: light;
+  --color-client: #8fa4ff;
+  --color-freelancer: #f79ce0;
+  --color-paid: #89d196;
+  --color-paid-soft: rgb(137 209 150 / 0.14);
+  --color-held: #d0d6e0;
+  --color-held-soft: rgb(208 214 224 / 0.12);
+  --color-refused: #f34e52;
+  --color-refused-soft: rgb(243 78 82 / 0.12);
 }
 
 html {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ESCROWS, findStep, SCENES, shortHash, type Outcome, type Scene, type Step } from "@/lib/record";
+import { NetworkName } from "@/components/network-name";
+import { ESCROWS, findStep, RECORDED, SCENES, shortHash, type Outcome, type Scene, type Step } from "@/lib/record";
 import { PaymentLine } from "@/components/line";
 import { SealedFiles } from "@/components/sealed";
 import { mark, useRecordCheck, VerifyBar, VerifyStep } from "@/components/verify";
@@ -72,47 +73,62 @@ export function Desk({ initialScene }: { initialScene: string }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="lg:sticky lg:top-16 lg:z-10 lg:-mx-5 lg:bg-canvas/95 lg:px-5 lg:py-3 lg:backdrop-blur-md">
+    <div className="lg:grid lg:grid-cols-[208px_minmax(0,1fr)] lg:items-start lg:gap-x-8">
+      <div className="lg:col-start-2 lg:row-start-1 lg:py-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h1 className="text-[18px] leading-snug font-medium tracking-[-0.02em]">
+            What the chain <span className="serif text-muted">already did</span>.
+          </h1>
+          <p className="num inline-flex items-center gap-1.5 text-[12px] text-faint">
+            <NetworkName />
+            <span>· {RECORDED}</span>
+          </p>
+        </div>
+        <p className="mt-1 text-[13px] text-muted">Opening a step does not send a transaction.</p>
+        <details className="mt-1.5 max-w-[68ch] text-[13px] leading-relaxed text-muted">
+          <summary className="cursor-pointer text-faint hover:text-ink">How a check works</summary>
+          <p className="mt-2">
+            Verify this step reads that transaction from the testnet and checks the signature. A hash that is not in
+            this file stays unmatched. <span className="num text-[12px] text-ink">npm run evidence</span> re-checks the
+            same hashes from the repository.
+          </p>
+        </details>
+      </div>
+      <div
+        role="tablist"
+        aria-label="Scenes"
+        className="flex w-full min-w-0 gap-1 overflow-x-auto py-2 lg:sticky lg:top-12 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100dvh-3rem)] lg:flex-col lg:gap-0.5 lg:self-start lg:overflow-y-auto lg:py-3"
+      >
+        {SCENES.map((item) => {
+          const selected = item.id === scene.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => openScene(item)}
+              className={`flex min-w-[10.5rem] shrink-0 items-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors lg:min-w-0 lg:w-full ${
+                selected ? "bg-raise text-ink" : "text-muted hover:bg-raise hover:text-ink"
+              }`}
+            >
+              <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${selected ? "bg-brand" : "bg-line"}`} aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="num block text-[11px] text-faint">
+                  {item.index} · Escrow {item.escrow}
+                </span>
+                <span className="mt-0.5 block leading-snug">{item.title}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="min-w-0 space-y-4 lg:col-start-2 lg:row-start-2">
         <PaymentLine
           escrowLabel={`Escrow ${scene.escrow}`}
           amount={scene.escrow === "A" ? "1.000000 fUSD × 2 milestones" : "1.000000 fUSD · 120s review"}
         />
-      </div>
-
-      <div className="min-w-0 space-y-6">
-        <div
-          role="tablist"
-          aria-label="Scenes"
-          className="flex w-full gap-2 overflow-x-auto pb-1"
-        >
-          {SCENES.map((item) => {
-            const selected = item.id === scene.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => openScene(item)}
-                className={`relative min-w-[11.5rem] shrink-0 rounded-xl px-3.5 py-3 text-left shadow-[inset_0_0_0_1px_var(--color-line)] transition-colors ${
-                  selected ? "bg-raise" : "bg-surface hover:bg-raise"
-                }`}
-              >
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={`h-2 w-2 shrink-0 rounded-full ${selected ? "bg-brand" : "bg-line"}`}
-                      aria-hidden="true"
-                    />
-                    <span className="num text-[12px] text-faint">
-                      {item.index} · Escrow {item.escrow}
-                    </span>
-                  </span>
-                  <span className="mt-1 block text-[15px] font-medium tracking-[-0.02em] text-ink">{item.title}</span>
-                </button>
-              );
-            })}
-        </div>
 
         <section
           id="ticket"
@@ -243,42 +259,30 @@ function Ticket({
 }) {
   const index = steps.findIndex((item) => item.id === step.id);
   return (
-    <div className="mt-5 grid items-start gap-4 lg:grid-cols-[13.5rem_minmax(0,1fr)]">
-      <ol className="sticky top-16 z-10 -mx-1 flex gap-2 overflow-x-auto bg-surface/95 px-1 py-2 backdrop-blur-md lg:sticky lg:top-52 lg:z-auto lg:mx-0 lg:max-h-[calc(100dvh-14rem)] lg:flex-col lg:self-start lg:overflow-y-auto lg:overflow-x-visible lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
+    <div className="mt-5">
+      <ol className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3">
         {steps.map((item, i) => {
           const active = item.id === step.id;
           return (
-            <li key={item.id} className="min-w-[12rem] shrink-0 lg:min-w-0">
+            <li key={item.id} className="max-w-full">
               <button
                 type="button"
                 aria-current={active ? "step" : undefined}
                 onClick={() => onPick(item.id)}
-                className={`flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2.5 text-left text-[14px] transition-colors ${
-                  active ? "bg-raise text-ink" : "text-muted hover:bg-raise/60 hover:text-ink"
-                }`}
+                className={`text-left text-[13px] leading-snug ${active ? "font-medium text-ink" : "text-faint hover:text-ink"}`}
               >
-                <span className="mt-1.5 flex shrink-0 items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${active ? "bg-brand" : "bg-line"}`} aria-hidden="true" />
-                  <span className="num text-[12px] text-faint">{String(i + 1).padStart(2, "0")}</span>
+                <span className="num">{String(i + 1).padStart(2, "0")}</span> {item.title}
+                <span className={`ml-1.5 ${active ? TONE[item.outcome].split(" ")[1] : ""}`}>
+                  {item.error ?? item.outcome}
                 </span>
-                <span className="min-w-0">
-                  <span className="block font-medium text-ink">{item.title}</span>
-                  <span
-                    className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium tracking-[0.05em] ${TONE[item.outcome]}`}
-                  >
-                    {item.error ?? item.outcome}
-                  </span>
-                  {mark(marks[item.id]) ? (
-                    <span className="mt-1 block text-[11px] text-faint">{mark(marks[item.id])}</span>
-                  ) : null}
-                </span>
+                {mark(marks[item.id]) ? <span className="ml-1.5 text-[11px] text-faint">{mark(marks[item.id])}</span> : null}
               </button>
             </li>
           );
         })}
       </ol>
 
-      <article id="step-reading" className="min-w-0 scroll-mt-36 rounded-xl bg-canvas p-4 shadow-[inset_0_0_0_1px_var(--color-line)] sm:p-5">
+      <article id="step-reading" className="mt-4 min-w-0 scroll-mt-16 rounded-xl bg-canvas p-4 shadow-[inset_0_0_0_1px_var(--color-line)] sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-brand" aria-hidden="true" />

@@ -11,6 +11,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByText("Client", { exact: true })).toBeVisible();
     await expect(page.getByText("Freelancer", { exact: true })).toBeVisible();
     await expect(page.getByText("The panel keys cannot be paid.")).toBeVisible();
+    await expect(page.getByText("Fund the client from the faucet.")).toBeVisible();
+    await expect(page.getByText("These should fail. Run them once an escrow exists.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Try to steal the pay" })).toBeDisabled();
     await expect(page.getByText("Courier did not carry this file.")).toBeVisible();
     await expect(page.getByText("1 Receipt")).toBeVisible();
