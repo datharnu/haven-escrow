@@ -33,6 +33,12 @@ jobs:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: compile the ABI the unit test compares against
+        run: forge build
+        working-directory: .
       - uses: actions/setup-node@v4
         with:
           node-version: 22

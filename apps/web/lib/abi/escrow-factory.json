@@ -1,0 +1,118 @@
+[
+  {
+    "type": "function",
+    "name": "create",
+    "inputs": [
+      {
+        "name": "t",
+        "type": "tuple",
+        "internalType": "struct HavenEscrow.Terms",
+        "components": [
+          {
+            "name": "client",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "freelancer",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "arbiters",
+            "type": "address[]",
+            "internalType": "address[]"
+          },
+          {
+            "name": "reviewPeriod",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "arbiterTimeout",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "defaultSplitBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "amounts",
+            "type": "uint128[]",
+            "internalType": "uint128[]"
+          },
+          {
+            "name": "deadlines",
+            "type": "uint64[]",
+            "internalType": "uint64[]"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "escrow",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isEscrow",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "EscrowCreated",
+    "inputs": [
+      {
+        "name": "escrow",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "client",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "freelancer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "termsHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  }
+]

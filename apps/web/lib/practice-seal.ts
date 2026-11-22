@@ -1,7 +1,7 @@
 /**
  * A practice file sealed the way `src/ts/deliverable.ts` seals one.
- * The seal keys exist only while this function runs. The page cannot open the file.
- * Courier's receipt is a different hash. The shared word is keccak256 of the ciphertext.
+ * The seal keys for a practice file exist only while that function runs.
+ * Courier's receipt is keccak256 of the ciphertext.
  */
 import { gcm } from "@noble/ciphers/aes.js";
 import { randomBytes } from "@noble/ciphers/utils.js";
@@ -87,6 +87,39 @@ async function sealFile(input: {
     clientEnvelope: toHex(clientEnvelope),
     arbiterEnvelopes: arbiterEnvelopes.map((envelope) => toHex(envelope)) as [Hex, Hex, Hex],
   };
+}
+
+/** The commitment of a ciphertext Courier already sealed. The envelopes bind the same file key. The key is not returned. */
+export async function commitmentForCiphertext(escrow: Address, ciphertext: Hex, fileKey: Uint8Array): Promise<Hex> {
+  const key = new Uint8Array(fileKey);
+  const client = generateSealKeys();
+  const arbiters = [generateSealKeys(), generateSealKeys(), generateSealKeys()] as const;
+  const aad = aadBytes(getAddress(escrow), 0n);
+  const clientEnvelope = seal({
+    chainId: CHAIN,
+    purpose: FILE_KEY_PURPOSE,
+    recipients: [recipientOf(client)],
+    plaintext: key,
+    aad,
+  });
+  const shares = await split(key, 3, 2);
+  const arbiterEnvelopes = shares.map((share, i) =>
+    seal({
+      chainId: CHAIN,
+      purpose: SHARE_PURPOSE,
+      recipients: [recipientOf(arbiters[i])],
+      plaintext: share,
+      aad,
+    }),
+  );
+  key.fill(0);
+  return commitmentOf({
+    escrow: getAddress(escrow),
+    milestone: 0n,
+    ciphertext,
+    clientEnvelope: toHex(clientEnvelope),
+    arbiterEnvelopes: arbiterEnvelopes.map((envelope) => toHex(envelope)) as [Hex, Hex, Hex],
+  });
 }
 
 /** Seals one practice file and returns the two hashes. The keys are not returned. */

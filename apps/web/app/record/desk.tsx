@@ -5,6 +5,7 @@ import { NetworkName } from "@/components/network-name";
 import { ESCROWS, findStep, RECORDED, SCENES, shortHash, type Outcome, type Scene, type Step } from "@/lib/record";
 import { PaymentLine } from "@/components/line";
 import { SealedFiles } from "@/components/sealed";
+import { NoThirdName } from "@/components/third-name";
 import { mark, useRecordCheck, VerifyBar, VerifyStep } from "@/components/verify";
 
 const FILTERS = ["All", "Paid", "Refused", "Held"] as const;
@@ -144,6 +145,9 @@ export function Desk({ initialScene }: { initialScene: string }) {
             </p>
           </div>
           <p className="mt-3 max-w-[62ch] text-[15px] text-muted">{scene.summary}</p>
+          <div className="mt-5 min-w-0">
+            <NoThirdName embedded />
+          </div>
           <VerifyBar
             busy={check.busy}
             progress={check.progress}

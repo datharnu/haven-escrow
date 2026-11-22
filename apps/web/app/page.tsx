@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { NetworkName } from "@/components/network-name";
 import { Questions } from "@/components/questions";
+import { NoThirdName } from "@/components/third-name";
 import { ESCROWS, NETWORK, RECORDED, SCENES } from "@/lib/record";
 
 const FACTORY = "0xf30bfc219987E60e849D5cF9e7351b7380eEc09B";
@@ -149,6 +150,10 @@ export default function Home() {
           ))}
         </ul>
       </section>
+
+      <div className="mt-14">
+        <NoThirdName />
+      </div>
 
       <section className="mt-14" aria-label="Recorded contracts">
         <p className="flex flex-wrap items-center gap-x-2 text-[12px] font-medium tracking-[0.12em] text-muted uppercase">

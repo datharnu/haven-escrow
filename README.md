@@ -21,7 +21,7 @@ npm ci
 npm run evidence
 ```
 
-`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
+`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. On 21 November 2026, after the Courier carry, it printed 79 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
 
 `forge test` and `npm run test:ts` need no chain and no key. They use a mock of the precompiles. A passing test is not a testnet receipt.
 
@@ -329,14 +329,15 @@ On testnet, as recorded on 20 November 2026:
 - A dispute, a one-arbiter refusal, and a two-arbiter split paid to the two named parties.
 - An early timeout refused, then a timeout release after a real wait.
 - An evidence check of the recorded hashes.
+- A practice path on testnet, recorded on 21 November 2026 in `deployments/practice.json`. Escrow `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90`. Create, fund, the receipt, and deliver are classical. The zero-signature release reverted. The classical open has no hash. Milestone 0 status is 2 and the escrow holds 100000 fUSD base units. Courier did not carry the file. HavenEscrow does not read DeliveryReceipts.
+- Courier carried one file on 21 November 2026. Escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. The client opened the file and signed the receipt. DeliveryReceipts recorded ciphertext `0x7d0cf82a1ba8b2bddbf7b4c2f2cd356c877771494be8ac2181c1cd758fb05b74`. The freelancer delivered that ciphertext. The page read `receipt()` and the hash matched. The client released 100000 fUSD base units to the stored freelancer `0x8c7b839B916554803b3356cE05233B36b73aC3FF`. HavenEscrow does not read DeliveryReceipts. The hashes are in `deployments/courier-pays.json`.
 - Two audit PDFs and the finding map.
 - `npm run cbom:check` passed locally on 21 November 2026. It caught the `ecrecover` fixture.
 - A GitHub Actions workflow at `.github/workflows/test.yml`. The contract and cryptography job went green on 21 November 2026 (run 44886746463). That run did not include the web smoke job, which is in the workflow now.
 
 Not in the repo yet, and not claimed:
 
-- A full practice path on testnet. `/practice` can send one after you confirm, including Try to steal the pay, a sealed file, and a Courier receipt of that file’s ciphertext hash. No throwaway run is recorded, so there is no Haven family line, and the QOR cost of each action has not been measured on a new escrow. The last `DeliveryReceipts.record` used 288262 gas.
-- No third name, as a panel. `resolve` takes `address[] who`. Those addresses sign the split. They are not paid: `_pay` in `src/HavenEscrow.sol` transfers only to the stored client or the stored freelancer. The check that was going to list address parameters stopped on `who`, on 21 November 2026.
+- A bytecode comparison inside the No third name panel. The panel lists the state-changing functions and reads the recorded fUSD transfers. It does not check the bytecode against the source. The Foundry tests and docs/AUDIT.md do.
 - The sealed file is on `/record` for scenes 1 and 3. The page recomputes the commitment from the published ciphertext and the three envelopes. It does not open the file, and it does not show a share or the file key. Escrow B's manifest is checked by the unit test and is not on the timeout scene.
 - A film. The shot list is [docs/DEMO.md](docs/DEMO.md). The featured image is [docs/featured.png](docs/featured.png). The film itself has not been recorded.
 - A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first. The practice page does not call it.
@@ -346,7 +347,7 @@ Not in the repo yet, and not claimed:
 
 Written during the fest, November 2026. It builds on:
 
-- **Haven family:** none yet. Steward and Courier use haven-pq-kit. Neither calls this escrow, and this escrow does not call them. [docs/kits.md](docs/kits.md) is the map. [AI_USAGE.md](AI_USAGE.md) says what a person decided.
+- **Haven family:** Courier carried one file for practice escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. The page read `receipt()` and the ciphertext hash matched. HavenEscrow does not read DeliveryReceipts. The hashes are in `deployments/courier-pays.json`. Steward does not call this escrow. [docs/kits.md](docs/kits.md) is the map. [AI_USAGE.md](AI_USAGE.md) says what a person decided.
 - **QoreChain kits:** `@qorechain/sdk`, `@qorechain/pqc`, `@qorechain/qoreseal`, `@qorechain/qoresign`, `@qorechain/mcp`, `@qorechain/qorescan`, `@qorechain/evm`, `@qorechain/wallet-adapter`, and `@qorechain/qorex-types`. The last two add the testnet to MetaMask and let QoreX send test QOR. They do not sign a release.
 - **haven-pq-kit v0.1.0:** https://github.com/datharnu/haven-pq-kit. `PqAuth` and `PqQuorum` are the signature checks. The submodule is pinned to commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`. Their interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr, Apache-2.0. The implementation was written for Haven.
 - **Meter:** the earlier rule that a stored payment line has one recipient. The idea was kept. The contracts were written for this chain.

@@ -22,6 +22,10 @@ import {
   receiptSealedFile,
   release,
   replayRelease,
+  courierPays,
+  readCarriedReceipt,
+  type CarryStart,
+  type CourierPay,
   resolveHalf,
   stealPay,
   wrongMilestone,
@@ -35,9 +39,22 @@ import type { UnifiedAccount } from "@qorechain/sdk";
 
 const FEE = NATIVE_FEE.amount[0].amount;
 const FAUCET = "https://dashboard.qorechain.io/faucet";
+const CARRY_KEY = "haven-escrow-carry";
+
+function readCarry(): CarryStart | null {
+  const raw = localStorage.getItem(CARRY_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as CarryStart;
+    if (!parsed.escrow || !parsed.createHash || !parsed.convertHash) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 /** Where a status line renders: under the controls that started the action. */
-type Zone = "identities" | "fund" | "setup" | "steps" | "settle" | "steal" | "refusals";
+type Zone = "identities" | "fund" | "setup" | "steps" | "settle" | "steal" | "refusals" | "carry";
 
 type Problem = { text: string; raw: string; quiet: boolean; fix: "retry" | "fund" | "pass" | "register" | null };
 
@@ -137,12 +154,21 @@ export function PracticeDesk() {
   const [milestone, setMilestone] = useState<number | null>(null);
   const [progressError, setProgressError] = useState(false);
   const [seen, setSeen] = useState(0);
+  const [family, setFamily] = useState<CourierPay | null>(null);
   const sendLock = useRef(false);
 
   useEffect(() => {
     const saved = loadDeal();
     setDeal(saved);
     setReady(true);
+    const raw = localStorage.getItem("haven-escrow-family");
+    if (raw) {
+      try {
+        setFamily(JSON.parse(raw) as CourierPay);
+      } catch {
+        setFamily(null);
+      }
+    }
     if (!saved) return;
     let cancelled = false;
     void accountsFrom(saved.phrases).then((next) => {
@@ -772,9 +798,9 @@ export function PracticeDesk() {
                       setBusy(null);
                     }
                     ask("setup", "Create the escrow", windowLine, async () => {
-                      const escrow = await createEscrow(accounts);
-                      keep({ ...deal, escrow });
-                      setNote(escrow);
+                      const created = await createEscrow(accounts);
+                      keep({ ...deal, escrow: created.escrow });
+                      setNote(created.escrow);
                       setSeen((n) => n + 1);
                     });
                   })()
@@ -929,8 +955,8 @@ export function PracticeDesk() {
                   void (async () => {
                     if (!(await requireStatus("settle", 2, "The freelancer delivers first."))) return;
                     await gate("settle", "client", WINDOW_FLOOR, "Release", windowLine, async () => {
-                      const signature = await release(accounts.client, getAddress(deal.escrow!));
-                      keep({ ...deal, releaseSignature: signature });
+                      const sent = await release(accounts.client, getAddress(deal.escrow!));
+                      keep({ ...deal, releaseSignature: sent.signature });
                       setNote("Released to the freelancer.");
                       setSeen((n) => n + 1);
                     });
@@ -1093,6 +1119,49 @@ export function PracticeDesk() {
               </dl>
             </div>
           </section>
+
+          <section className="min-w-0 rounded-xl bg-surface px-5 py-5 shadow-[inset_0_0_0_1px_var(--color-line)]">
+            <h2 className="text-[18px] font-medium tracking-[-0.025em] text-ink">Courier delivers, Escrow pays</h2>
+            <p className="mt-2 max-w-[62ch] text-sm text-muted">
+              The freelancer seals one file with Courier. The client opens it in this browser and signs the delivery receipt.
+              HavenEscrow does not read DeliveryReceipts. The page does. No directory bundle is published, and no relay is hosted.
+            </p>
+            <div className="mt-4">
+              <Action
+                disabled={busy !== null || family !== null}
+                label="Carry the file and release"
+                onClick={() => {
+                  const open = readCarry();
+                  const fresh = `One confirmation creates a new escrow, sends the file, records the receipt, delivers that ciphertext, and releases. It does not touch 0xb0d8Da3B7979120E6877016810D39a792a3Bdf90. The client pays about 574659 uqor to create (open ${FEE}, call 214659 from the last create of 1908074 gas, close ${FEE}), ${FEE} uqor to convert, about 369079 uqor to fund (open ${FEE}, call 9079 from 80696 gas, close ${FEE}), about 390541 uqor to record the receipt (open ${FEE}, call 30541 from 271474 gas, close ${FEE}), and about 392688 uqor to release (open ${FEE}, call 32688 from 290557 gas, close ${FEE}). The freelancer pays about 389252 uqor to deliver (open ${FEE}, call 29252 from 260016 gas, close ${FEE}). Each call is priced again and stops above 1320000 uqor. The create stops above 3300000 uqor. Gas price on 21 November 2026 was 112500000000 wei.`;
+                  const funded = open
+                    ? `The escrow ${open.escrow} is funded. This confirmation does not fund it again, does not create another escrow, and does not touch 0xb0d8Da3B7979120E6877016810D39a792a3Bdf90. The client pays about 390541 uqor to record the receipt (open ${FEE}, call 30541 from 271474 gas, close ${FEE}) and about 392688 uqor to release (open ${FEE}, call 32688 from 290557 gas, close ${FEE}). The freelancer pays about 389252 uqor to deliver (open ${FEE}, call 29252 from 260016 gas, close ${FEE}). Each call is priced again and stops above 1320000 uqor. Gas price on 21 November 2026 was 112500000000 wei.`
+                    : fresh;
+                  const again = open?.fundHash
+                    ? funded
+                    : open
+                      ? `The escrow ${open.escrow} already holds the 0.1 fUSD. This confirmation does not create another escrow and does not touch 0xb0d8Da3B7979120E6877016810D39a792a3Bdf90. The client pays about 369079 uqor to fund (open ${FEE}, call 9079 from 80696 gas, close ${FEE}), about 390541 uqor to record the receipt (open ${FEE}, call 30541 from 271474 gas, close ${FEE}), and about 392688 uqor to release (open ${FEE}, call 32688 from 290557 gas, close ${FEE}). The freelancer pays about 389252 uqor to deliver (open ${FEE}, call 29252 from 260016 gas, close ${FEE}). Each call is priced again and stops above 1320000 uqor. Gas price on 21 November 2026 was 112500000000 wei.`
+                      : fresh;
+                  ask(
+                    "carry",
+                    "Courier delivers, Escrow pays",
+                    again,
+                    async () => {
+                      const paid = await courierPays(accounts, open ?? undefined, (partial) => {
+                        localStorage.setItem(CARRY_KEY, JSON.stringify(partial));
+                      });
+                      localStorage.setItem("haven-escrow-family", JSON.stringify(paid));
+                      localStorage.removeItem(CARRY_KEY);
+                      setFamily(paid);
+                      setNote(paid.escrow);
+                    },
+                    "Send",
+                  );
+                }}
+              />
+            </div>
+            {status("carry")}
+            {family ? <FamilyReceipt run={family} client={getAddress(accounts.client.evm)} /> : <p className="mt-3 text-sm text-muted">No file has been carried.</p>}
+          </section>
         </div>
       </div>
 
@@ -1242,6 +1311,52 @@ function CopyIcon() {
       <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
       <path d="M10.5 5.5V3.8A1.3 1.3 0 0 0 9.2 2.5H3.8A1.3 1.3 0 0 0 2.5 3.8v5.4A1.3 1.3 0 0 0 3.8 10.5H5.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
     </svg>
+  );
+}
+
+function FamilyReceipt({ run, client }: { run: CourierPay; client: Address }) {
+  const [read, setRead] = useState<"reading" | "matched" | "unread">("reading");
+  useEffect(() => {
+    let cancel = false;
+    readCarriedReceipt({
+      conversationId: run.conversationId as Hex,
+      counter: run.counter,
+      ciphertextHash: run.ciphertextHash as Hex,
+      recipient: client,
+    }).then((recordedAt) => {
+      if (!cancel) setRead(recordedAt !== null && recordedAt > 0n ? "matched" : "unread");
+    });
+    return () => {
+      cancel = true;
+    };
+  }, [run, client]);
+  return (
+    <div className="mt-4 grid min-w-0 gap-2">
+      <p className="min-w-0 text-[13px] break-words text-muted">
+        Escrow{" "}
+        <span className="num break-all text-ink" title={run.escrow}>
+          {short(run.escrow)}
+        </span>
+      </p>
+      <p className="min-w-0 text-[13px] break-words text-muted">
+        Ciphertext{" "}
+        <span className="num break-all text-ink" title={run.ciphertextHash}>
+          {short(run.ciphertextHash)}
+        </span>
+      </p>
+      <p className="text-sm text-muted">
+        {read === "reading" ? "Reading the testnet." : null}
+        {read === "unread" ? "The check could not be read." : null}
+        {read === "matched" ? "receipt() holds this ciphertext hash. It is the file Courier carried." : null}
+      </p>
+      <p className="text-[13px] text-faint">HavenEscrow does not read DeliveryReceipts.</p>
+      <p className="min-w-0 text-[13px] break-words text-muted">
+        Paid{" "}
+        <span className="num break-all text-ink" title={run.payee}>
+          {short(run.payee)}
+        </span>
+      </p>
+    </div>
   );
 }
 
