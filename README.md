@@ -9,7 +9,7 @@ Tunde, a developer in Lagos, takes a two-milestone job worth 2,000 fUSD from May
 [Demo video (2:12)](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view) · [Live demo](https://havenesc.vercel.app) · [Judge in 5 minutes](#judge-it-in-5-minutes) · [Run locally](#run-locally) · [What works today](#what-works-today)
 
 <p align="center">
-  <a href="https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view"><img src="docs/screen-home.png" width="880" alt="Watch the Haven Escrow demo" /></a>
+  <a href="https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view"><img src="docs/video-cover.jpg" width="880" alt="Watch the Haven Escrow demo" /></a>
   <br />
   <sub><a href="https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view">▶ Watch demo (2:12)</a></sub>
 </p>
