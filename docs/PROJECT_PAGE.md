@@ -21,7 +21,7 @@ The rules: funds can only ever reach the two names fixed at creation: no functio
 - Demo: https://havenesc.vercel.app
 - Replay and live signature check (no wallet): https://havenesc.vercel.app/record
 - Repository: https://github.com/datharnu/haven-escrow (Apache-2.0)
-- Video: not recorded yet. Add the link here once it exists.
+- Video (2:12): https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view
 
 ## Contract addresses (`qorechain-diana`, EVM chain ID 9800)
 

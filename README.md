@@ -6,7 +6,11 @@ Built for freelancers in Nigeria and across Africa who are paid by clients abroa
 
 Tunde, a developer in Lagos, takes a two-milestone job worth 2,000 fUSD from Maya, a client in Berlin. Even if an attacker steals Maya's classical wallet key after she funds the escrow, five different release attempts move **0.00 fUSD** — every payout still requires a fresh ML-DSA-87 signature from Maya, a 2-of-3 arbiter split, or the review timeout both accepted at creation. With `HavenEscrowV2`, Maya also cannot pretend she never got the work: if her device signed a delivery receipt for Tunde's file and she then disputes and goes silent, a silent arbiter panel pays Tunde in full instead of splitting the milestone.
 
-[Live demo](https://havenesc.vercel.app) · [Judge in 5 minutes](#judge-it-in-5-minutes) · [Run locally](#run-locally) · [What works today](#what-works-today)
+[Demo video (2:12)](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view) · [Live demo](https://havenesc.vercel.app) · [Judge in 5 minutes](#judge-it-in-5-minutes) · [Run locally](#run-locally) · [What works today](#what-works-today)
+
+<p align="center">
+  <a href="https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view"><img src="docs/video-thumb.jpg" width="720" alt="Haven Escrow demo video (2:12): click to watch on Google Drive" /></a>
+</p>
 
 <p align="center">
   <a href="https://havenesc.vercel.app"><img src="docs/screen-home.png" width="880" alt="Haven Escrow home screen showing the headline 'Only the two names can be paid' and five recorded classical-key refusals on Escrow A with 0.000000 fUSD moved." /></a>
@@ -192,7 +196,7 @@ Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bount
 | **Foundry or Hardhat tests** | `forge test` runs 102 Foundry tests across unit, fuzz (256 runs), invariant (64 runs, 2,560 calls), factory, and byte-vector suites (41 of them for `HavenEscrowV2`, run against a copy of Courier's `DeliveryReceipts`); `npm run test:ts` adds 20 TypeScript tests and `apps/web` Vitest adds 42 web unit tests. | Foundry has no QoreChain precompiles, so tests use 4,627-byte keccak mock signatures. Live ML-DSA-87 signatures are proven on Diana testnet and re-checked by `npm run evidence` and `/record`. |
 | **Public GitHub repository under MIT or Apache-2.0** | `https://github.com/datharnu/haven-escrow`, Apache-2.0 (`LICENSE`). | Explorer source verification is not available on Diana explorer; compiler settings are in `foundry.toml`. |
 | **README and testnet addresses** | This single-file `README.md` contains all addresses, hashes, audit findings, and limits. | Testnet only (`qorechain-diana`, chain ID 9800); fUSD has no monetary value. |
-| **Video of up to 3 minutes** | Shot list is ready in `docs/DEMO.md`; featured image is `docs/featured.png`. | **Not recorded yet.** Must be recorded and linked before 2 December 2026. |
+| **Video of up to 3 minutes** | Shot list is ready in `docs/DEMO.md`; featured image is `docs/featured.png`. | [Demo video](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view) (2:12). Motion-graphics explainer built from the recorded evidence, with synthetic narration (ElevenLabs); not a screen recording of a live session. |
 | **Built during the event & open-source credits** | First commit `6343063` on 20 November 2026; all kits and libraries credited below. | Shares the two-name immutable-line design shape from the author's earlier project Meter; all contracts here were written fresh for QoreChain. |
 
 ---
@@ -307,7 +311,7 @@ Live transaction scripts (`npm run deploy`, `npm run fund-client`, `npm run scen
 
 ## Roadmap
 
-1. **Before 2 December 2026:** Record and publish the ≤3-minute demo film following `docs/DEMO.md`.
+1. **Done (23 November 2026):** [demo video](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view) (2:12).
 2. **Security:** Commission an external Solidity + post-quantum security audit before any real-value use.
 3. **Mainnet:** Deploy `EscrowFactory` on QoreChain mainnet once `pqcVerify` and `pqcKeyStatus` are enabled on mainnet, with production review defaults (14 days).
 
@@ -335,6 +339,8 @@ Built during **Build Before Q-Day** (November 2026; deadline 2 December 2026 at 
 ## AI disclosure
 
 AI coding assistants were used under human direction to write code, tests, web UI, and documentation (commits `4d66bf5`, `a55c534`, and `8fda522` on 21 November 2026 were written in Cursor with Grok 4.7; earlier commits `6343063`–`7280e84` do not record a specific model; later merge resolution and README restructuring used Antigravity).
+
+The demo video (23 November 2026) was built in Remotion with Claude Code (Claude Opus 5.5) from this README's recorded evidence, and the human reviewed and approved every script. Its narration is a synthetic ElevenLabs voice; the background track is Mixkit's "Vastness".
 
 The delivery receipt gate (`HavenEscrowV2`, its tests and scripts, and the `/record` panel) and the audience copy were drafted with Claude Code under human direction on 23 November 2026.
 
