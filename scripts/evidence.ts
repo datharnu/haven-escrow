@@ -1,8 +1,11 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { TOOLS, toolContext } from "@qorechain/mcp";
-import type { Hex } from "viem";
+import { getAddress, keccak256, type Address, type Hex } from "viem";
+import { DELIVERY_RECEIPTS, DELIVERY_RECEIPTS_CODEHASH, escrowV2Abi, factoryV2Abi } from "../src/ts/receipt-gate.js";
 import { evmClient } from "./lib/chain.js";
+import { milestoneV2, storedReceipt } from "./lib/gate.js";
+import { SCENE6_REPORT, type Scene6Report } from "./lib/gate-record.js";
 import { printBalanceDelta } from "./lib/live.js";
 
 /**
@@ -78,6 +81,54 @@ export async function checkEvidence(dir: string): Promise<Row[]> {
   return rows;
 }
 
+/**
+ * HavenEscrowV2 state, read once its deployment files exist: the factory and Escrow D pin Courier's
+ * DeliveryReceipts (whose code hash is the pinned Courier build), and, after scene 6, the client's stored receipt
+ * over the stored commitment is on record and the silent-panel timeout resolved the milestone.
+ */
+export async function checkReceiptGate(dir: string): Promise<Row[]> {
+  const deployPath = join(dir, "escrow-v2.json");
+  if (!existsSync(deployPath)) return [];
+  const rows: Row[] = [];
+  const add = (note: string, ok: boolean, detail: string) =>
+    rows.push({ file: "receipt gate", hash: "(state)", tier: "classical", ok, detail, note });
+  try {
+    const deploy = JSON.parse(readFileSync(deployPath, "utf8")) as { ok?: boolean; factory?: Address; escrowD?: Address };
+    if (!deploy.ok || !deploy.factory || !deploy.escrowD) {
+      add("escrow-v2.json is ok", false, "not ok yet");
+      return rows;
+    }
+    const client = evmClient();
+    const code = await client.getCode({ address: DELIVERY_RECEIPTS });
+    const codehash = code ? keccak256(code) : "0x";
+    add("DeliveryReceipts is the Courier build", codehash === DELIVERY_RECEIPTS_CODEHASH, `codehash ${codehash}`);
+    const [factoryPin, escrowPin, marked] = await Promise.all([
+      client.readContract({ address: deploy.factory, abi: factoryV2Abi, functionName: "receipts" }),
+      client.readContract({ address: deploy.escrowD, abi: escrowV2Abi, functionName: "receipts" }),
+      client.readContract({ address: deploy.factory, abi: factoryV2Abi, functionName: "isEscrow", args: [deploy.escrowD] }),
+    ]);
+    add("factory v2 and Escrow D pin DeliveryReceipts", getAddress(factoryPin) === DELIVERY_RECEIPTS && getAddress(escrowPin) === DELIVERY_RECEIPTS && marked,
+      `factory ${factoryPin}, escrow ${escrowPin}, isEscrow ${String(marked)}`);
+    const scenePath = join(dir, SCENE6_REPORT.split("/").pop() as string);
+    if (!existsSync(scenePath)) return rows;
+    const scene = JSON.parse(readFileSync(scenePath, "utf8")) as Scene6Report;
+    if (!scene.ok || !scene.commitment || !scene.conversationId || !scene.client) {
+      add("scene-6-receipt-gate.json is ok", false, "not ok yet");
+      return rows;
+    }
+    const ms = await milestoneV2(deploy.escrowD, 0n);
+    const recordedAt = await storedReceipt(scene.conversationId, 0n, scene.commitment, scene.client);
+    const receivedSplit = await client.readContract({ address: deploy.escrowD, abi: escrowV2Abi, functionName: "receivedSplitBps" });
+    add("Escrow D milestone 0 Resolved with the client's receipt on record", ms.status === 5 && ms.receivedAt.toString() === scene.receivedAt && Number(receivedSplit) === 10000,
+      `status ${ms.status}, receivedAt ${ms.receivedAt}, receivedSplitBps ${receivedSplit}`);
+    add("client's receipt over the stored commitment is on DeliveryReceipts", ms.commitment === scene.commitment && recordedAt > 0n && recordedAt.toString() === scene.recordedAt,
+      `recordedAt ${recordedAt}`);
+  } catch (error) {
+    add("receipt gate reads", false, error instanceof Error ? error.message : String(error));
+  }
+  return rows;
+}
+
 function printTable(rows: Row[]): void {
   const header = ["result", "file", "tier", "hash", "detail", "note"];
   const lines = rows.map((row) => [row.ok ? "PASS" : "FAIL", row.file, row.tier, row.hash, row.detail, row.note]);
@@ -89,8 +140,9 @@ function printTable(rows: Row[]): void {
 }
 
 const dir = process.argv[2] ?? "deployments";
-checkEvidence(dir)
-  .then(async (rows) => {
+Promise.all([checkEvidence(dir), checkReceiptGate(dir)])
+  .then(async ([hashes, gate]) => {
+    const rows = [...hashes, ...gate];
     if (rows.length === 0) {
       console.error(`no transactions recorded in ${dir}`);
       process.exit(1);

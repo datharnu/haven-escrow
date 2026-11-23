@@ -18,6 +18,19 @@ const ITEMS: { q: string; a: ReactNode }[] = [
     ),
   },
   {
+    q: "What does the client's delivery receipt prove?",
+    a: (
+      <>
+        In <span className="num text-[13px] text-ink">HavenEscrowV2</span>, Courier&apos;s{" "}
+        <span className="num text-[13px] text-ink">DeliveryReceipts</span> stores a receipt only after{" "}
+        <span className="num text-[13px] text-ink">pqcVerify</span> accepts the named recipient&apos;s registered
+        ML-DSA-87 key. Anyone can record that receipt on the escrow for the stored client and the stored commitment. If
+        the client then disputes and the arbiters stay silent, the timeout pays the freelancer in full instead of the
+        default split. It proves the client&apos;s device signed for the sealed file, not that the work is good.
+      </>
+    ),
+  },
+  {
     q: "How can I verify the run without your keys?",
     a: (
       <>

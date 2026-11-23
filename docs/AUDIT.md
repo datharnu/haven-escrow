@@ -57,3 +57,14 @@ Stage 2 ran on the same source, because no Stage 1 finding required a contract c
 | Unbounded loop in `getBalances` | LOW | `getBalances` | False positive. There is no `getBalances`. `held` loops over at most 8 milestones. |
 
 Neither report named a finding that applies to the pasted source, so the score did not move.
+
+## HavenEscrowV2
+
+Both PDFs were run on `src/HavenEscrow.sol` before `src/HavenEscrowV2.sol` existed. The QCAI dashboard has not been run on V2. `HavenEscrowV2` is a copy of `HavenEscrow` with these changes, and nothing else (`diff src/HavenEscrow.sol src/HavenEscrowV2.sol` shows them):
+
+- Two immutables set in the constructor: `receipts` (zero address refused; `EscrowFactoryV2` passes the address it was deployed with and refuses an address with no code) and `receivedSplitBps` (a new `Terms` field, refused above 10000 with `BadSplit`).
+- One milestone field, `receivedAt`.
+- One function, `acknowledge(m, conversationId, counter, parts)`: status must be `Delivered` or `Disputed` and `receivedAt` zero; `keccak256(abi.encode(address(this), m, parts))` must equal the stored commitment; `IDeliveryReceipts(receipts).receipt(conversationId, counter, commitment, client)` must return a non-zero `recordedAt`. It has the `lock` modifier, takes no recipient, and changes no timing.
+- `resolveTimeout` pays `receivedSplitBps` when `receivedAt != 0`, otherwise `defaultSplitBps`. `deliver`, `release`, `autoRelease`, `dispute`, `refund`, `resolve`, `cancel`, and `sweep` are unchanged.
+
+The new external call is a `view` (`STATICCALL`) to the fixed `DeliveryReceipts`, so it cannot change state or re-enter. `npm run audit:check` holds the V2 files to the same 12 checks: none of the cited names in `src/` or in either shipped ABI, no owner or admin, no `unchecked`, one low-level call per escrow (`_pay`, return value checked), and no other external call except the token `balanceOf` read and the `DeliveryReceipts.receipt` read. Tests: `test/HavenEscrowV2.t.sol`, `test/HavenEscrowV2.fuzz.t.sol`, and `test/HavenEscrowV2.invariant.t.sol`, run against `test/courier/DeliveryReceipts.sol`, a copy of Courier's contract.

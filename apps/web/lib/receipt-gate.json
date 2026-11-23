@@ -1,0 +1,108 @@
+{
+  "recorded": "2026-11-23",
+  "network": "qorechain-diana",
+  "escrow": "0x5f355a9fefc20D13FA99588a70Aa0de635C669da",
+  "factory": "0x9b6b91f20C6Fbb198d2c84000a7d5854c1F72856",
+  "deliveryReceipts": "0x06B52aFc4A151B0eFa260E2AdcDf2D477632cb56",
+  "client": "0xB911fD43FC85826947d1E11084e594f8b9D466bf",
+  "freelancer": "0x4D0D492100220F97d07fEa68612fee70ff037764",
+  "commitment": "0xf958c9736e1b64e201c862a5501916afd805e00f4e15e3c9c13f7cf5af43d8bc",
+  "conversationId": "0x2a25f74bd113776b726b8feca5ab78e3af545edb4ab33a888eb8a11f2dfa4f91",
+  "arbiterTimeout": "180",
+  "disputedAt": "1795437332",
+  "receivedAt": "1795437354",
+  "recordedAt": "1795437329",
+  "paidToFreelancer": "100000",
+  "paidToClient": "0",
+  "steps": [
+    {
+      "id": "deliver",
+      "title": "deliver(0), relayed by spike",
+      "outcome": "held",
+      "hash": "0x7325daabf81906f5776a192a41c19d72700e01a5b4b4e198249a412c047cb4fc",
+      "who": "Freelancer, ML-DSA-87"
+    },
+    {
+      "id": "no-receipt",
+      "title": "acknowledge(0) with no receipt",
+      "outcome": "refused",
+      "error": "NoReceipt",
+      "hash": "0xfa5768d5071ad284afea3aaace05ea9fc0ce311ee4317e71fc29d6c7ec9abd6c",
+      "who": "Anyone"
+    },
+    {
+      "id": "forged-receipt",
+      "title": "record a receipt naming the client, signed by Carol's key",
+      "outcome": "refused",
+      "error": "SignatureInvalid",
+      "hash": "0xf5339018b71e1fb29d60d660fc47dea32eed5d90d81dd570031055342cb97962",
+      "who": "Courier's Carol"
+    },
+    {
+      "id": "carol-receipt",
+      "title": "record Carol's own receipt over the commitment (counter 2)",
+      "outcome": "held",
+      "hash": "0x8e589551abafaeacd76e2cff0785020a083ccd17f82cd60cd917e1daf864daa3",
+      "who": "Courier's Carol, ML-DSA-87"
+    },
+    {
+      "id": "ciphertext-receipt",
+      "title": "client records a receipt over keccak256(ciphertext) only (counter 1)",
+      "outcome": "held",
+      "hash": "0xa495011e1d7cb224991ab7efb5be4719c46f1c516844e2ed90915c43f90edc4e",
+      "who": "Client, ML-DSA-87"
+    },
+    {
+      "id": "client-receipt",
+      "title": "client records the receipt over the commitment (counter 0)",
+      "outcome": "held",
+      "hash": "0x9a12ffdc36fd681c3f27d74fc1e3b1e943634444480f068bef632011bc73197b",
+      "who": "Client, ML-DSA-87"
+    },
+    {
+      "id": "dispute",
+      "title": "client disputes milestone 0, then goes silent",
+      "outcome": "held",
+      "hash": "0x2de46e4f033457928a538e4c5e59ceff7c1de6533781c728e15e53aa452b13d4",
+      "who": "Client, ML-DSA-87"
+    },
+    {
+      "id": "timeout-early",
+      "title": "resolveTimeout(0) before the 180 s arbiter timeout",
+      "outcome": "refused",
+      "error": "TooEarly",
+      "hash": "0x710315bcb0b9620bed341fa6a46802f52f44e6d5a88edc8d02c9f17c7185fe4b",
+      "who": "Anyone"
+    },
+    {
+      "id": "carol-ack",
+      "title": "acknowledge(0) with Carol's receipt (counter 2)",
+      "outcome": "refused",
+      "error": "NoReceipt",
+      "hash": "0x455743ae0c08b4adb932fb80c6013d057fe1d9e32726e30419ea1ff9b5ae6e89",
+      "who": "Anyone"
+    },
+    {
+      "id": "ciphertext-ack",
+      "title": "acknowledge(0) with the ciphertext-only receipt (counter 1)",
+      "outcome": "refused",
+      "error": "NoReceipt",
+      "hash": "0x8ce3374a8f3b7311ec2f43a22b06daf9f86c76445bad6e483f07fd02d71a8227",
+      "who": "Anyone"
+    },
+    {
+      "id": "acknowledge",
+      "title": "acknowledge(0) with the client's receipt (counter 0), while Disputed",
+      "outcome": "held",
+      "hash": "0xd797ce77247c9236583cdee24fc09402cb609118dd6c51a9b7395d10c0d1ffce",
+      "who": "Spike, no role"
+    },
+    {
+      "id": "timeout-paid",
+      "title": "resolveTimeout(0): receivedSplitBps 10000, 100,000 fUSD base units to the freelancer",
+      "outcome": "paid",
+      "hash": "0xd9c87de7ebc5c70a6b9d298b0f4b889d63f4b292182fc001963803fec5074d93",
+      "who": "Spike, no role"
+    }
+  ]
+}

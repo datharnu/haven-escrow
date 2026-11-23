@@ -76,6 +76,15 @@ const KNOWN_ERRORS = [
   { type: "error", name: "ZeroCommitment", inputs: [] },
   { type: "error", name: "TransferFailed", inputs: [] },
   { type: "error", name: "Reentrancy", inputs: [] },
+  // HavenEscrowV2 and EscrowFactoryV2
+  { type: "error", name: "CommitmentMismatch", inputs: [{ type: "uint256" }] },
+  { type: "error", name: "NoReceipt", inputs: [{ type: "uint256" }] },
+  { type: "error", name: "AlreadyReceived", inputs: [{ type: "uint256" }] },
+  { type: "error", name: "NoReceiptsCode", inputs: [{ type: "address" }] },
+  // Courier DeliveryReceipts
+  { type: "error", name: "ZeroWord", inputs: [] },
+  { type: "error", name: "ZeroRecipient", inputs: [] },
+  { type: "error", name: "AlreadyRecorded", inputs: [{ type: "bytes32" }] },
 ] as const satisfies Abi;
 
 export const WINDOW_CAP = { deploy: 5_000_000n, call: 2_000_000n, resolve: 3_000_000n } as const;

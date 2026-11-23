@@ -9,6 +9,12 @@ describe("web ABI copies", () => {
     expect(copy).toEqual(artifact.abi);
   });
 
+  it("matches the HavenEscrowV2 artifact", () => {
+    const artifact = JSON.parse(readFileSync("out/HavenEscrowV2.sol/HavenEscrowV2.json", "utf8")) as { abi: unknown };
+    const copy = JSON.parse(readFileSync("apps/web/lib/abi/haven-escrow-v2.json", "utf8"));
+    expect(copy).toEqual(artifact.abi);
+  });
+
   it("matches the IQorePQC artifact", () => {
     const artifact = JSON.parse(readFileSync("out/IQorePQC.sol/IQorePQC.json", "utf8")) as { abi: unknown };
     const copy = JSON.parse(readFileSync("apps/web/lib/abi/iqore-pqc.json", "utf8"));

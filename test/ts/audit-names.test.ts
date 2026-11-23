@@ -30,4 +30,22 @@ describe("QCAI findings against the source", () => {
     expect(failed).toContain("HavenEscrow.sol:admin functions");
     expect(failed).toContain("HavenEscrow.sol:transfer functions");
   });
+
+  it("would catch a V2 escrow that calls out to anything but its two view reads", () => {
+    const planted = {
+      path: "src/HavenEscrowV2.sol",
+      text: [
+        "pragma solidity 0.8.28;",
+        "uint256 internal constant MAX_MILESTONES = 8;",
+        "(bool ok, bytes memory ret) = token.call(data);",
+        "if (!ok || (ret.length != 0 && !abi.decode(ret, (bool)))) revert TransferFailed();",
+        "(, uint256 at) = IDeliveryReceipts(receipts).receipt(c, n, h, client);",
+        "IHook(hook).notify(m);",
+      ].join("\n"),
+    };
+    const results = checkFindings([planted], []);
+    const transfer = results.find((r) => r.finding.location === "HavenEscrow.sol:transfer functions");
+    expect(transfer?.ok).toBe(false);
+    expect(transfer?.detail).toContain("src/HavenEscrowV2.sol:6");
+  });
 });

@@ -39,11 +39,22 @@ export type Source = { path: string; text: string };
 
 export type Result = { finding: Finding; ok: boolean; detail: string };
 
-/** Escrow contracts the audit covers. */
-export const ESCROW_FILES = ["src/HavenEscrow.sol", "src/EscrowFactory.sol", "src/EscrowArgs.sol"];
+/**
+ * Escrow contracts the audit covers. The PDFs were run on HavenEscrow.sol; the V2 files (the receipt gate)
+ * are held to the same checks so a later version cannot quietly add what the findings describe.
+ */
+export const ESCROW_FILES = [
+  "src/HavenEscrow.sol",
+  "src/EscrowFactory.sol",
+  "src/EscrowArgs.sol",
+  "src/HavenEscrowV2.sol",
+  "src/EscrowFactoryV2.sol",
+  "src/IDeliveryReceipts.sol",
+];
 /** Everything compiled into or alongside the escrow, including the vendored PQC kit. */
 export const SOURCE_DIRS = ["src", "lib/haven-pq-kit/src"];
 export const ABI_FILE = "apps/web/lib/abi/haven-escrow.json";
+export const ABI_FILES = [ABI_FILE, "apps/web/lib/abi/haven-escrow-v2.json"];
 
 function solidityFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -57,9 +68,11 @@ export function loadSources(dirs: string[] = SOURCE_DIRS): Source[] {
   return dirs.flatMap(solidityFiles).map((path) => ({ path, text: readFileSync(path, "utf8") }));
 }
 
-export function loadAbiNames(path: string = ABI_FILE): string[] {
-  const abi = JSON.parse(readFileSync(path, "utf8")) as { type?: string; name?: string }[];
-  return abi.filter((item) => item.type === "function" && item.name).map((item) => item.name as string);
+export function loadAbiNames(paths: string | string[] = ABI_FILES): string[] {
+  return (Array.isArray(paths) ? paths : [paths]).flatMap((path) => {
+    const abi = JSON.parse(readFileSync(path, "utf8")) as { type?: string; name?: string }[];
+    return abi.filter((item) => item.type === "function" && item.name).map((item) => item.name as string);
+  });
 }
 
 function hits(sources: Source[], pattern: RegExp): string[] {
@@ -102,16 +115,37 @@ function checkCategory(finding: Finding, escrow: Source[]): Result {
     }
     case "HavenEscrow.sol:transfer functions": {
       // This one names something that does exist in spirit: `_pay` calls the token's transfer.
-      // The check is that it is the only external call and its return value is checked.
-      const calls = hits(escrow, /\.(call|delegatecall|staticcall|transfer|send)\s*[({]/);
-      const checked = escrow.some(({ text }) => /if \(!ok \|\| \(ret\.length != 0 && !abi\.decode\(ret, \(bool\)\)\)\) revert TransferFailed\(\);/.test(text));
-      const ok = calls.length === 1 && checked;
+      // The check, per escrow contract: that is its only low-level call and its return value is checked.
+      // Other external calls allowed: `view` reads (STATICCALL) of the token balance, and V2's read of DeliveryReceipts.
+      const lowLevel = /\.(call|delegatecall|staticcall|transfer|send)\s*[({]/;
+      const interfaceCall = /\bI[A-Z]\w*\(\w+\)\.\w+\s*\(/;
+      const allowedRead = /\bIDeliveryReceipts\(receipts\)\.receipt\(|\bIERC20\(token\)\.balanceOf\(address\(this\)\)/;
+      const returnCheck = /if \(!ok \|\| \(ret\.length != 0 && !abi\.decode\(ret, \(bool\)\)\)\) revert TransferFailed\(\);/;
+      const problems: string[] = [];
+      const found: string[] = [];
+      for (const file of escrow) {
+        const calls = hits([file], lowLevel);
+        if (calls.length === 0) continue;
+        found.push(...calls);
+        if (calls.length !== 1) problems.push(`${file.path} has ${calls.length} low-level calls`);
+        if (!returnCheck.test(file.text)) problems.push(`${file.path} does not check the return value`);
+      }
+      const reads = hits(escrow, interfaceCall);
+      const strayReads = reads.filter((where) => {
+        const [path, line] = [where.slice(0, where.lastIndexOf(":")), Number(where.slice(where.lastIndexOf(":") + 1))];
+        const text = escrow.find((s) => s.path === path)?.text.split("\n")[line - 1] ?? "";
+        return !allowedRead.test(text);
+      });
+      if (strayReads.length) problems.push(`other external calls at ${strayReads.join(", ")}`);
+      if (found.length === 0) problems.push("no _pay call found");
+      const ok = problems.length === 0;
       return {
         finding,
         ok,
         detail: ok
-          ? `one external call (${calls[0]}, in _pay); its return value is checked and reverts TransferFailed`
-          : `external calls at ${calls.join(", ") || "none"}; return check present ${checked}`,
+          ? `one low-level call per escrow (${found.join(", ")}, in _pay), each return value checked (TransferFailed)` +
+            `; other calls are view reads only (token balanceOf, DeliveryReceipts.receipt) at ${reads.join(", ")}`
+          : problems.join("; "),
       };
     }
     case "HavenEscrow.sol:batch processing functions": {

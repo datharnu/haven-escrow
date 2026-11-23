@@ -23,8 +23,9 @@ export default function Home() {
         </div>
         <div className="min-w-0 max-w-[46ch] lg:justify-self-end">
           <p className="text-[17px] leading-[1.55] text-muted">
-            A release needs a fresh ML-DSA-87 signature from the named party, or the review timeout both parties
-            accepted when the escrow was created. Any other key or address is refused.
+            Milestone escrow for freelancers in Nigeria and across Africa who are paid by clients abroad. A release
+            needs a fresh ML-DSA-87 signature from the named party, or the review timeout both parties accepted when the
+            escrow was created. Any other key or address is refused.
           </p>
           <a href="#states" className="mt-5 inline-flex items-center gap-1.5 text-[14px] text-ink hover:opacity-80">
             How a payment moves
@@ -66,6 +67,58 @@ export default function Home() {
             <span className="num text-refused">Reverted · no recipient arg</span>
           </li>
         </ul>
+      </section>
+
+      <section id="who" className="mt-20 border-t border-line pt-14 sm:mt-28 sm:pt-16" aria-labelledby="who-heading">
+        <div className="grid items-end gap-6 lg:grid-cols-2 lg:gap-16">
+          <h2 id="who-heading" className="max-w-[16ch] text-[32px] leading-[1.08] font-medium tracking-[-0.035em] text-ink sm:text-[44px]">
+            Paid from abroad, held by no one.
+          </h2>
+          <p className="max-w-[42ch] text-[16px] leading-relaxed text-muted lg:justify-self-end">
+            A Lagos developer billing a client in Berlin often waits on someone else: a platform review, a card
+            issuer, a correspondent bank. Here the money waits in a contract that only the two of you, a timeout you
+            both agreed, or two of three arbiters can move.
+          </p>
+        </div>
+        <dl className="mt-10 divide-y divide-line border-t border-b border-line">
+          <div className="grid gap-2 py-4 sm:grid-cols-[240px_minmax(0,1fr)]">
+            <dt className="text-[15px] font-medium text-ink">Payment holds</dt>
+            <dd className="text-[15px] leading-relaxed text-muted">
+              You can check on chain that the milestone is funded before you start. No platform sits between the escrow
+              and you, and no admin role exists that could hold a payout.
+            </dd>
+          </div>
+          <div className="grid gap-2 py-4 sm:grid-cols-[240px_minmax(0,1fr)]">
+            <dt className="text-[15px] font-medium text-ink">Chargebacks</dt>
+            <dd className="text-[15px] leading-relaxed text-muted">
+              Once you deliver, the client cannot take a refund on their own. Their only routes are a release or a
+              signed dispute, and a dispute is settled by two of three arbiters.
+            </dd>
+          </div>
+          <div className="grid gap-2 py-4 sm:grid-cols-[240px_minmax(0,1fr)]">
+            <dt className="text-[15px] font-medium text-ink">Frozen accounts</dt>
+            <dd className="text-[15px] leading-relaxed text-muted">
+              The contract has no owner, admin, or upgrade key, so no one can freeze an escrow. The token&apos;s own
+              rules still apply.
+            </dd>
+          </div>
+          <div className="grid gap-2 py-4 sm:grid-cols-[240px_minmax(0,1fr)]">
+            <dt className="text-[15px] font-medium text-ink">Slow settlement</dt>
+            <dd className="text-[15px] leading-relaxed text-muted">
+              A release is one transaction to the address fixed at creation. Turning the token into naira or any other
+              currency is outside this project.
+            </dd>
+          </div>
+          <div className="grid gap-2 py-4 sm:grid-cols-[240px_minmax(0,1fr)]">
+            <dt className="text-[15px] font-medium text-ink">&ldquo;I never got the file&rdquo;</dt>
+            <dd className="text-[15px] leading-relaxed text-muted">
+              In <span className="num text-[13px] text-ink">HavenEscrowV2</span>, a receipt the client&apos;s own device
+              signed with its ML-DSA-87 key, stored on Courier&apos;s{" "}
+              <span className="num text-[13px] text-ink">DeliveryReceipts</span>, turns a stalling dispute into a full
+              payout to you if the arbiters stay silent.
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <section className="mt-20 grid gap-12 sm:mt-28 lg:grid-cols-3 lg:gap-0" aria-label="The rule in three figures">
@@ -113,7 +166,10 @@ export default function Home() {
             <h3 className="text-[16px] font-medium tracking-[-0.02em] text-ink">Deliver</h3>
             <p className="text-[15px] leading-relaxed text-muted">
               The freelancer signs <span className="num text-[13px] text-ink">deliver</span> over the chain, the escrow,
-              and the file commitment. The ciphertext stays off chain.
+              and the file commitment. The ciphertext stays off chain. In{" "}
+              <span className="num text-[13px] text-ink">HavenEscrowV2</span>, anyone can then call{" "}
+              <span className="num text-[13px] text-ink">acknowledge</span> to record the client&apos;s own receipt for
+              that commitment on the escrow.
             </p>
           </li>
           <li className="grid gap-2 py-5 sm:grid-cols-[88px_minmax(0,220px)_minmax(0,1fr)] sm:items-baseline sm:gap-6">
@@ -130,7 +186,9 @@ export default function Home() {
             <h3 className="text-[16px] font-medium tracking-[-0.02em] text-ink">Dispute</h3>
             <p className="text-[15px] leading-relaxed text-muted">
               A signed dispute stops the timeout. Two arbiters sign a basis-point split between the same two names. One
-              arbiter reverts <span className="num text-[13px] text-ink">TooFew</span>.
+              arbiter reverts <span className="num text-[13px] text-ink">TooFew</span>. If they stay silent, the split
+              agreed at creation applies; in <span className="num text-[13px] text-ink">HavenEscrowV2</span>, a recorded
+              client receipt switches it to the freelancer&apos;s full share.
             </p>
           </li>
         </ol>
@@ -170,6 +228,14 @@ export default function Home() {
           <div className="min-w-0 bg-surface px-4 py-4">
             <dt className="text-[12px] text-faint">EscrowFactory</dt>
             <dd className="num mt-1 text-[13px] break-all text-ink">{FACTORY}</dd>
+          </div>
+          <div className="min-w-0 bg-surface px-4 py-4">
+            <dt className="text-[12px] text-faint">Escrow D · HavenEscrowV2 · client&apos;s receipt, silent panel paid 100%</dt>
+            <dd className="num mt-1 text-[13px] break-all text-ink">0x5f355a9fefc20D13FA99588a70Aa0de635C669da</dd>
+          </div>
+          <div className="min-w-0 bg-surface px-4 py-4">
+            <dt className="text-[12px] text-faint">EscrowFactoryV2 · pins Courier&apos;s DeliveryReceipts</dt>
+            <dd className="num mt-1 text-[13px] break-all text-ink">0x9b6b91f20C6Fbb198d2c84000a7d5854c1F72856</dd>
           </div>
           <div className="min-w-0 bg-surface px-4 py-4">
             <dt className="text-[12px] text-faint">fUSD · 6 decimals · testnet token</dt>
@@ -216,10 +282,11 @@ export default function Home() {
             </dd>
           </div>
           <div className="grid gap-2 py-4 sm:grid-cols-[240px_minmax(0,1fr)]">
-            <dt className="text-[15px] font-medium text-ink">Record a live resolveTimeout receipt</dt>
+            <dt className="text-[15px] font-medium text-ink">Prove the work is good</dt>
             <dd className="text-[15px] leading-relaxed text-muted">
-              The silent-panel default split (<span className="num text-[13px] text-ink">resolveTimeout</span>, 5000
-              bps) is covered by Foundry tests. In Scene 3, two arbiters settled before the timeout expired.
+              The client&apos;s receipt proves their device signed for the sealed file that matches the commitment. It
+              does not judge quality, and two arbiters can still sign any split. A client who never signs one gets the
+              usual default split from a silent panel.
             </dd>
           </div>
         </dl>

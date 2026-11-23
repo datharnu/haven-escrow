@@ -1,0 +1,81 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "deliveryReceipts": "0x06B52aFc4A151B0eFa260E2AdcDf2D477632cb56",
+  "transactions": [
+    {
+      "hash": "CB1AFA25F7943CDC3A6F7DCB29137B0211940AEC6351FAD4EA1E52BBF85CC489",
+      "tier": "pqc",
+      "note": "spike opens unscoped window for EscrowFactoryV2 deploy"
+    },
+    {
+      "hash": "0x9209bcc2753154e902189df664f0173f40ce212c609202a92879ddc318242647",
+      "tier": "classical",
+      "note": "deploy EscrowFactoryV2(0x06B52aFc4A151B0eFa260E2AdcDf2D477632cb56) gasUsed 2905701 fee 326892 uqor"
+    },
+    {
+      "hash": "EB433ABB4951DEC91995BB72E3E4EBA9AA22A9F51E1AD356B797E075C257CDB3",
+      "tier": "pqc",
+      "note": "spike closes factory v2 deploy window"
+    },
+    {
+      "hash": "5B5589422B092E130AB28DB3D69FB9FA023F8C1B3FF996E5512BFF0CE84F9B3D",
+      "tier": "pqc",
+      "note": "client opens scoped window [factoryV2] for create escrow D"
+    },
+    {
+      "hash": "0x8d58f70225cae7881539290e2d9fb7472e3b54ba58787023d410037f82a5da86",
+      "tier": "classical",
+      "note": "create escrow D (0x5f355a9fefc20D13FA99588a70Aa0de635C669da) gasUsed 2096662 fee 235875 uqor"
+    },
+    {
+      "hash": "E3CE35E9271B5E0825ACD16FE9DFCD7337DA84AFFCD89F4C12826370CF0EBBBE",
+      "tier": "pqc",
+      "note": "client closes create escrow D window"
+    },
+    {
+      "hash": "32C2AF26C83F0477B7939704468C03AE3C6F41CFB7D50208CAE6198EE07D611E",
+      "tier": "pqc",
+      "note": "MsgConvertCoin 100000 fUSD base units to escrow D"
+    },
+    {
+      "hash": "50FDD7CD872F4A2CAE7A94DA5F31A502B5B77118181E8AF00E896A5462EA8EB5",
+      "tier": "pqc",
+      "note": "client opens scoped window [D] for fund()"
+    },
+    {
+      "hash": "0x6c649a1399c40dc5d2a6b951950667f0bb8bfa5c40c03585659efdd041305d64",
+      "tier": "classical",
+      "note": "fund D gasUsed 80724 fee 9082 uqor"
+    },
+    {
+      "hash": "48DBC3F5B74D79DE7522CEEB83211DDA4B2FE1346D5CBAEB01F6D73035753B02",
+      "tier": "pqc",
+      "note": "client closes fund D window"
+    }
+  ],
+  "deliveryReceiptsCodehash": "0xcedfc1642c2ec50dc06b3b67975ebfbb6938204aa8a8774dba19769e9114391f",
+  "factory": "0x9b6b91f20C6Fbb198d2c84000a7d5854c1F72856",
+  "termsD": {
+    "client": "0xB911fD43FC85826947d1E11084e594f8b9D466bf",
+    "freelancer": "0x4D0D492100220F97d07fEa68612fee70ff037764",
+    "token": "0x97143B771D34ddb9130b807b135Ae675A5a963CA",
+    "arbiters": [
+      "0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248",
+      "0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C",
+      "0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065"
+    ],
+    "reviewPeriod": "86400",
+    "arbiterTimeout": "180",
+    "defaultSplitBps": 5000,
+    "receivedSplitBps": 10000,
+    "amounts": [
+      "100000"
+    ],
+    "deadlines": [
+      "1796042027"
+    ]
+  },
+  "escrowD": "0x5f355a9fefc20D13FA99588a70Aa0de635C669da",
+  "ranAt": "2026-11-23T12:34:27.805Z"
+}

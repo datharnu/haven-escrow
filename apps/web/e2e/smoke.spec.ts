@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
 for (const width of [390, 1440]) {
@@ -12,9 +13,9 @@ for (const width of [390, 1440]) {
     await page.getByRole("link", { name: "Open app" }).click();
     await expect(page.getByRole("heading", { name: /What the chain/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "The sealed file" })).toBeVisible();
-    await expect(page.getByText("SignatureInvalid").first()).toBeHidden();
+    await expect(page.locator("#ticket").getByText("SignatureInvalid").first()).toBeHidden();
     await page.getByRole("tab", { name: /The classical key/ }).click();
-    await expect(page.getByText("SignatureInvalid").first()).toBeVisible();
+    await expect(page.locator("#ticket").getByText("SignatureInvalid").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "The sealed file" })).toHaveCount(0);
     await page.getByRole("tab", { name: "Two arbiters" }).click();
     await expect(page.getByRole("heading", { name: "The sealed file" })).toBeVisible();
@@ -50,4 +51,22 @@ test("the known release hash opens that step", async ({ page }) => {
   await page.getByLabel("Look up a transaction hash").fill("0x2ef9eac1ad5f785e");
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByRole("heading", { level: 3, name: /1.000000 fUSD/ })).toBeVisible();
+});
+
+test("the receipt-gate scene shows on /record only once it is recorded", async ({ page }) => {
+  // Playwright runs from apps/web. The scene script writes this file; until then it holds null.
+  const recorded = JSON.parse(readFileSync("lib/receipt-gate.json", "utf8")) as unknown;
+  await page.goto("/record");
+  const heading = page.getByRole("heading", { name: "The client can't pretend they never got the work" });
+  if (recorded === null) {
+    await expect(heading).toHaveCount(0);
+    return;
+  }
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(heading).toBeVisible();
+    await expect(page.getByText("NoReceipt").first()).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  }
 });

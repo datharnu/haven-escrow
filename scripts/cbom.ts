@@ -76,7 +76,7 @@ function checkSources(dirs: string[]): string[] {
         for (const match of line.matchAll(/(\w+)\s*\.\s*(staticcall|call|delegatecall)\s*\(/g)) {
           const target = match[1];
           const kind = match[2];
-          const payTheNamedParty = file.endsWith("HavenEscrow.sol") && target === "token" && kind === "call";
+          const payTheNamedParty = /HavenEscrow(V2)?\.sol$/.test(file) && target === "token" && kind === "call";
           if (target !== "PQC_VERIFY" && target !== "PQC_STATUS" && !payTheNamedParty) {
             findings.push(`low-level ${kind} on ${target} at ${where}`);
           }
