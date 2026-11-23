@@ -6,7 +6,7 @@ Built for clients and freelancers settling staged work on QoreChain. Once an esc
 
 Maya hires a contractor for a two-milestone job worth 2,000 fUSD. Even if an attacker steals Maya's classical wallet key after she funds the escrow, five different release attempts move **0.00 fUSD** — every payout still requires a fresh ML-DSA-87 signature from Maya, a 2-of-3 arbiter split, or the review timeout both accepted at creation.
 
-[Live demo](https://havenesc.vercel.app) · [Watch the film (up to 3 min — not recorded yet)](#built-during-the-hackathon) · [Judge in 5 minutes](#judge-it-in-5-minutes) · [Run locally](#run-locally) · [What works today](#what-works-today)
+[Live demo](https://havenesc.vercel.app) · [Judge in 5 minutes](#judge-it-in-5-minutes) · [Run locally](#run-locally) · [What works today](#what-works-today)
 
 <p align="center">
   <a href="https://havenesc.vercel.app"><img src="docs/screen-home.png" width="880" alt="Haven Escrow home screen showing the headline 'Only the two names can be paid' and five recorded classical-key refusals on Escrow A with 0.000000 fUSD moved." /></a>
@@ -19,7 +19,15 @@ Maya hires a contractor for a two-milestone job worth 2,000 fUSD. Even if an att
 | Dispute with one arbiter, then two of three signing a 70/30 split | One arbiter refused; two paid 0.700000 fUSD to freelancer and 0.300000 fUSD to client |
 | Review timeout (120-second demo window on Escrow B) | Early claim refused; claim after timeout paid 1.000000 fUSD with no new signature |
 
-**Why not an existing escrow or multisig?** Standard EVM escrows authorize payouts with `msg.sender` (secp256k1), so a stolen classical key — or a future quantum break of ECDSA — can release or redirect funds. Haven Escrow ignores `msg.sender` on every sensitive action, requires fresh ML-DSA-87 signatures checked by QoreChain's `pqcVerify` precompile, and has no function that accepts a recipient address.
+**Why not an existing escrow or multisig?** Standard EVM escrows authorize payouts with `msg.sender` (secp256k1), so a stolen classical key — or a future quantum break of ECDSA — can release or redirect funds. Haven Escrow requires fresh ML-DSA-87 signatures checked by QoreChain's `pqcVerify` precompile, and goes further than a PQ-signed release:
+- **No recipient argument anywhere.** Every payout goes to the `client` or `freelancer` fixed at creation; a valid signature can only choose *whether* and *how much*, never *to whom*.
+- **`msg.sender` carries no authority.** Any relayer can submit a signed `deliver`, `release`, `dispute`, `cancel`, or `resolve`; none can alter it.
+- **Disputes settle by a 2-of-3 arbiter ML-DSA-87 quorum** at any basis-point split, or by a split both parties agreed at creation if the arbiters stay silent.
+- **Review timeout:** a client who goes silent after delivery cannot hold the money; after the agreed period anyone can call `autoRelease` to pay the freelancer, with no new signature.
+- **Encrypted deliverable:** the file key is sealed to the client with ML-KEM-1024 and Shamir-split 2-of-3 across the arbiters; only a hash is on chain. A Courier delivery-receipt flow was run end to end on testnet.
+- **Checked, not just signed:** both QCAI audit stages committed, 61 Foundry tests including fuzz and invariants, and every testnet hash re-checkable with `npm run evidence`.
+
+**Audit score in context:** both QCAI reports score 35/100, and all 12 findings are false positives: 8 name functions that don't exist in `src/` (`withdraw`, `setFee`, `calculateFee`, `deposit`, `getBalances`), and 4 name categories (admin, balance-update, transfer, batch functions) whose issue the code does not have. Each is mapped in [`docs/AUDIT.md`](docs/AUDIT.md); `npm run audit:check` re-checks all 12 against the source.
 
 **What is the biggest risk?** Two colluding arbiters out of three can sign any basis-point split between the two parties and combine their two Shamir shares to decrypt the deliverable; the chain does not judge fairness. In addition, the PQC precompiles (`pqcVerify` and `pqcKeyStatus`) live on QoreChain Diana testnet today, not mainnet.
 
@@ -92,7 +100,7 @@ flowchart LR
 
 **Keeping the contract minimal and refusing to chase a broken automated audit score.**
 
-The Build Before Q-Day Post-Quantum dApp track requires a two-stage QCAI dashboard audit. Both runs against `src/HavenEscrow.sol` scored **35/100** and flagged `withdraw`, `setFee`, `calculateFee`, `deposit`, `getBalances`, and admin functions — none of which exist anywhere in `src/`. Adding a `withdraw(address)` or admin setter to satisfy the scanner would have directly broken Haven Escrow's core invariant ("no function takes a recipient"). We left the contract unchanged, documented all 12 false positives with exact code and test references below, and kept status-before-signature checks intact even though `cancel` on a `Delivered` milestone returns `WrongStatus` instead of `SignatureInvalid` (because a delivered milestone is already past cancellation).
+The Build Before Q-Day Post-Quantum dApp track requires a two-stage QCAI dashboard audit. Both runs against `src/HavenEscrow.sol` scored **35/100** (all 12 findings false positives: 8 name functions that don't exist in `src/`, e.g. `withdraw`, `setFee`; 4 name categories such as admin functions; each mapped in `docs/AUDIT.md`, re-checked by `npm run audit:check`). The named functions — `withdraw`, `setFee`, `calculateFee`, `deposit`, `getBalances` — and any admin role exist nowhere in `src/`. Adding a `withdraw(address)` or admin setter to satisfy the scanner would have directly broken Haven Escrow's core invariant ("no function takes a recipient"). We left the contract unchanged, documented all 12 false positives with exact code and test references below, and kept status-before-signature checks intact even though `cancel` on a `Delivered` milestone returns `WrongStatus` instead of `SignatureInvalid` (because a delivered milestone is already past cancellation).
 
 ---
 
@@ -146,7 +154,7 @@ Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bount
 | --- | --- | --- |
 | **Scoped EVM window** | Create, fund, deliver, release, dispute, resolve, and the classical-key rehearsal each ran inside a scoped EVM window aimed at one contract (or `[A, B]` for funding). `EscrowFactory.create` runs inside a window scoped to `[factory]`. | Deploying `EscrowFactory` itself used an unscoped window because a scoped window cannot create a contract from an EOA. The account's ML-DSA-87 key opens windows; the contract does not. |
 | **`pqcVerify`** | `deliver`, `release`, `dispute`, and `cancel` call `PqAuth.authorize`; `resolve` calls `PqQuorum` — both call `pqcVerify` (`0x…0a01`). Constructor calls `pqcKeyStatus` (`0x…0a02`) for all five parties. | The precompile calls live in vendored `haven-pq-kit` v0.1.0 rather than inlined in `HavenEscrow.sol`. `EscrowFactory` runtime code embeds the escrow initcode containing both addresses. |
-| **Two-stage QCAI audit** | Both PDFs are committed at `docs/audit/stage-1-2026-11-21.pdf` and `docs/audit/stage-2-2026-11-21.pdf`, with all 12 findings mapped below and in `docs/AUDIT.md`. | Both PDFs score 35/100 on the Ethereum (EVM/Solidity) setting and flag functions not in `src/`. Quantum readiness is `"Not scored"` on this setting (expected per FAQ). |
+| **Two-stage QCAI audit** | Both PDFs are committed at `docs/audit/stage-1-2026-11-21.pdf` and `docs/audit/stage-2-2026-11-21.pdf`, with all 12 findings mapped below and in `docs/AUDIT.md`. | Both PDFs score 35/100 on the Ethereum (EVM/Solidity) setting. All 12 findings are false positives: 8 name functions that don't exist in `src/` (e.g. `withdraw`, `setFee`), 4 name categories (admin, balance-update, transfer, batch); each mapped in `docs/AUDIT.md`, and `npm run audit:check` re-checks all 12. Quantum readiness is `"Not scored"` on this setting (expected per FAQ). |
 | **Foundry or Hardhat tests** | `forge test` runs 61 Foundry tests across unit, fuzz (256 runs), invariant (64 runs, 2,560 calls), factory, and byte-vector suites; `npm run test:ts` and `apps/web` Vitest add 39 web unit tests. | Foundry has no QoreChain precompiles, so tests use 4,627-byte keccak mock signatures. Live ML-DSA-87 signatures are proven on Diana testnet and re-checked by `npm run evidence` and `/record`. |
 | **Public GitHub repository under MIT or Apache-2.0** | `https://github.com/datharnu/haven-escrow`, Apache-2.0 (`LICENSE`). | Explorer source verification is not available on Diana explorer; compiler settings are in `foundry.toml`. |
 | **README and testnet addresses** | This single-file `README.md` contains all addresses, hashes, audit findings, and limits. | Testnet only (`qorechain-diana`, chain ID 9800); fUSD has no monetary value. |
@@ -210,6 +218,7 @@ forge test
 npm run test:ts
 npm run typecheck
 npm run cbom:check
+npm run audit:check    # every QCAI finding re-checked against src/
 
 # Live testnet hash verification (no keys required)
 npm run evidence
@@ -247,7 +256,7 @@ Live transaction scripts (`npm run deploy`, `npm run fund-client`, `npm run scen
 | `test/` | Foundry unit, fuzz, invariant, factory, and byte-vector tests (61 tests) |
 | `test/ts/` | Vitest suite for TypeScript signing, deliverables, and web ABI sync |
 | `apps/web/` | Next.js 16 app: `/` (rule & refusals), `/record` (four-scene replay & live browser PQC verifier), `/practice` (browser identities & Courier carry) |
-| `scripts/` | Deploy, five testnet scenes, `evidence.ts` (98-check verifier), `cbom.ts` (QoreScan + `ecrecover` check), and `vectors.ts` |
+| `scripts/` | Deploy, five testnet scenes, `evidence.ts` (98-check verifier), `cbom.ts` (QoreScan + `ecrecover` check), `audit-names.ts` (QCAI findings vs. source), and `vectors.ts` |
 | `deployments/` | Recorded testnet hashes, deliverables (ciphertext + sealed envelopes, no file keys), practice, Courier carry, and Scene 5 `resolveTimeout` JSONs |
 | `cards/` | Public ML-KEM-1024 cards for the client and three arbiters |
 | `docs/audit/` | Stage 1 and Stage 2 QCAI audit PDFs (`stage-1-2026-11-21.pdf`, `stage-2-2026-11-21.pdf`) |
@@ -441,7 +450,17 @@ Ran on 20 November 2026 against `SpikeTarget` (`0xe11fe2bb1ad13ab116e0d362b218ef
 
 ## Evidence: two-stage QCAI audit findings
 
-Both reports ran on the same `src/HavenEscrow.sol` using the Ethereum (EVM/Solidity) setting (`Quantum readiness: Not scored`, expected per FAQ). Every finding in both stages named functions not present in `src/`, so no source edits were made between stages and the score remained `35/100`.
+Both reports ran on the same `src/HavenEscrow.sol` using the Ethereum (EVM/Solidity) setting (`Quantum readiness: Not scored`, expected per FAQ). No finding applied to the source, so no source edits were made between stages and the score remained `35/100`.
+
+**Read the score with this:** all 12 findings are false positives. 8 name a function that does not exist in `src/` (`withdraw` four times, `setFee`, `calculateFee`, `deposit`, `getBalances`). The other 4 (all Stage 1) name a category rather than a function: "admin functions" (there is no owner or admin), "balance update functions" (none; Solidity `0.8.28` checked arithmetic, no `unchecked` block), "transfer functions" (the one external call, in `_pay`, checks its return value), and "batch processing functions" (none; at most 8 milestones). Each is mapped in the tables below and in `docs/AUDIT.md`.
+
+One command re-checks all 12 against `src/`, the vendored `lib/haven-pq-kit/src/`, and the shipped ABI, with no chain and no keys:
+
+```bash
+npm run audit:check   # prints PASS/FAIL per finding; exits 1 if any cited function exists
+```
+
+On 23 November 2026 it printed `12 of 12 finding checks passed` and `8 of 8 name a function that does not exist`. The same check runs inside `npm run test:ts` (`test/ts/audit-names.test.ts`), which also plants a `withdraw`, a `setFee`, and an `owner` in a fake source to prove the check catches them.
 
 | Stage | PDF | Generated | Score | PDF risk level | Findings |
 | --- | --- | --- | --- | --- | ---: |
@@ -474,9 +493,9 @@ Both reports ran on the same `src/HavenEscrow.sol` using the Ethereum (EVM/Solid
 
 ## Evidence: Foundry tests, fuzzing, and invariants
 
-Recorded in `.gas-snapshot` (Solidity `0.8.28`, optimizer 200 runs, `via_ir`): **61 Foundry tests total**, **0 failures**.
+Recorded in `.gas-snapshot` (Solidity `0.8.28`, optimizer 200 runs, `via_ir`): **61 Foundry tests total**, **0 failures**. Forge 1.9 prints the six invariants of `HavenEscrowInvariantTest` as one suite entry, so its summary line reads `56 tests passed`; each invariant is still listed as `[PASS]` above it.
 
-- **51 unit, factory, and vector tests:** covers creation validation (zero address, same party, party-as-arbiter, >8 milestones, unsorted arbiters, unregistered client/freelancer/arbiter), delivery, release, replay/wrong-escrow/wrong-milestone/expired-deadline refusals, cancellation, refund, sweep, 70/30 resolve, `resolveTimeout`, boundary-second timing, 5 stolen-classical-key tests (client, freelancer, and all 3 arbiters), and byte-for-byte TypeScript vector parity (`VectorsTest`).
+- **52 unit, factory, and vector tests** (50 in `HavenEscrowTest`, 1 in `EscrowFactoryTest`, 1 in `VectorsTest`): covers creation validation (zero address, same party, party-as-arbiter, >8 milestones, unsorted arbiters, unregistered client/freelancer/arbiter), delivery, release, replay/wrong-escrow/wrong-milestone/expired-deadline refusals, cancellation, refund, sweep, 70/30 resolve, `resolveTimeout`, boundary-second timing, 5 stolen-classical-key tests (client, freelancer, and all 3 arbiters), and byte-for-byte TypeScript vector parity (`VectorsTest`).
 - **3 fuzz tests (256 runs each):** `testFuzz_amounts`, `testFuzz_resolveSplit`, `testFuzz_timing`.
 - **6 invariant tests (64 runs, depth 40, 2,560 calls each, 0 reverts):** `invariant_conservation`, `invariant_fundsOnlyReachParties`, `invariant_heldCovered`, `invariant_noDoublePayment`, `invariant_releaseNeedsPqOrTimeout`, `invariant_terminalIsFinal`.
 - **Web unit tests (`apps/web`):** 39 tests across 9 Vitest files (vectors, recorded RPC replay, Courier carry, No Third Name ABI/transfer checks, practice steps, revert decoding).

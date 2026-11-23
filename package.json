@@ -23,7 +23,8 @@
     "scene:4": "tsx scripts/scene-4-timeout.ts",
     "scene:5": "tsx scripts/scene-5-resolve-timeout.ts",
     "gas": "forge snapshot",
-    "web": "npm --prefix apps/web run dev -- -p 3020"
+    "web": "npm --prefix apps/web run dev -- -p 3020",
+    "audit:check": "tsx scripts/audit-names.ts"
   },
   "dependencies": {
     "@cosmjs/stargate": "0.39.0",

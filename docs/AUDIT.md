@@ -9,6 +9,16 @@ Both reports used the Ethereum (EVM/Solidity) setting on the same source. The PD
 
 The scores are the auditor's own numbers.
 
+All 12 findings are false positives. 8 name a function that does not exist in `src/` (`withdraw` four times, `setFee`, `calculateFee`, `deposit`, `getBalances`). The other 4, all in Stage 1, name a category instead of a function (admin, balance-update, transfer, and batch functions); each is answered below.
+
+To re-check all 12 against `src/`, the vendored `lib/haven-pq-kit/src/`, and the shipped HavenEscrow ABI (no chain, no keys):
+
+```bash
+npm run audit:check
+```
+
+It prints PASS or FAIL per finding and exits 1 if any cited function name appears, as any identifier in any case. For the 4 category findings it checks: no owner, admin, or setter; no balance or batch function and no `unchecked` block; exactly one external call, with its return value checked; `MAX_MILESTONES = 8`. `test/ts/audit-names.test.ts` runs the same check in `npm run test:ts` and plants a `withdraw`, a `setFee`, and an `owner` in a fake source to show the check catches them.
+
 The Stage 1 report names functions that are not in `HavenEscrow.sol`: `withdraw`, `admin`, balance-update helpers, and batch processing. A search of `src/` finds none of those names, and no `onlyOwner` or `SafeMath`. Each finding below is a false positive for that reason. The contract was not changed to chase them.
 
 ## Where the PQC checks are

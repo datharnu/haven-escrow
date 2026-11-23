@@ -30,16 +30,20 @@ const ITEMS: { q: string; a: ReactNode }[] = [
     ),
   },
   {
-    q: "What about the 35/100 QCAI audit PDFs?",
+    q: "Why do the QCAI audit PDFs say 35/100? (All 12 findings are false positives.)",
     a: (
       <>
-        Both dashboard PDFs in <span className="num text-[13px] text-ink">docs/audit/</span> flag functions (
+        Both dashboard PDFs in <span className="num text-[13px] text-ink">docs/audit/</span> score 35/100, and all 12
+        findings are false positives. 8 name functions that do not exist in{" "}
+        <span className="num text-[13px] text-ink">src/</span> (
         <span className="num text-[13px] text-ink">withdraw</span>,{" "}
         <span className="num text-[13px] text-ink">setFee</span>,{" "}
-        <span className="num text-[13px] text-ink">deposit</span>) that do not exist in{" "}
-        <span className="num text-[13px] text-ink">HavenEscrow.sol</span>.{" "}
-        <span className="num text-[13px] text-ink">docs/AUDIT.md</span> maps each finding to the actual contract and
-        tests.
+        <span className="num text-[13px] text-ink">calculateFee</span>,{" "}
+        <span className="num text-[13px] text-ink">deposit</span>,{" "}
+        <span className="num text-[13px] text-ink">getBalances</span>); the other 4 name categories (admin, balance,
+        transfer, batch functions) whose issue the code does not have. Each is mapped in{" "}
+        <span className="num text-[13px] text-ink">docs/AUDIT.md</span>, and{" "}
+        <span className="num text-[13px] text-ink">npm run audit:check</span> re-checks all 12 against the source.
       </>
     ),
   },
