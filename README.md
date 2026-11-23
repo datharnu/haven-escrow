@@ -1,358 +1,514 @@
 # Haven Escrow
 
-**Funds leave only to the client or the freelancer named when the escrow was created. Every release needs a fresh ML-DSA-87 signature, or a timeout those two parties already accepted.**
+**Pay a freelancer in milestones without a stolen key being able to redirect the money.**
 
-Track: Post-Quantum dApp, [Build Before Q-Day](https://build.qorechain.io/). Repository: https://github.com/datharnu/haven-escrow. Licence: Apache-2.0.
+Built for clients and freelancers settling staged work on QoreChain. Once an escrow is created, only the two named addresses can ever receive funds — a stolen secp256k1 key, a rogue relayer, or a lone arbiter cannot redirect or release a cent.
 
-Network `qorechain-diana`, EVM chain id 9800. The contracts are on testnet. They are not on mainnet. The fUSD in them is a test token and has no value.
+Maya hires a contractor for a two-milestone job worth 2,000 fUSD. Even if an attacker steals Maya's classical wallet key after she funds the escrow, five different release attempts move **0.00 fUSD** — every payout still requires a fresh ML-DSA-87 signature from Maya, a 2-of-3 arbiter split, or the review timeout both accepted at creation.
 
-The site in this repository replays the four scenes. It does not send a transaction. The public copy is https://havenesc.vercel.app. There is no film yet. A juror can also re-check the hashes without our keys. Both paths are below.
+[Live demo](https://havenesc.vercel.app) · [Watch the film (up to 3 min — not recorded yet)](#built-during-the-hackathon) · [Judge in 5 minutes](#judge-it-in-5-minutes) · [Run locally](#run-locally) · [What works today](#what-works-today)
 
-## Judge it without our keys
+<p align="center">
+  <a href="https://havenesc.vercel.app"><img src="docs/screen-home.png" width="880" alt="Haven Escrow home screen showing the headline 'Only the two names can be paid' and five recorded classical-key refusals on Escrow A with 0.000000 fUSD moved." /></a>
+</p>
 
-1. Read the one rule in the first line, then the four rows in [What was measured](#what-was-measured).
-2. Open [docs/AUDIT.md](docs/AUDIT.md). Both dashboard reports are in [docs/audit/](docs/audit/). The score on those PDFs is the auditor's number. The [FAQ](https://build.qorechain.io/faq) says that number is not added into the jury score. The write-up says what we did with each finding.
-3. Clone the repo and re-check every recorded hash:
-
-```bash
-git clone --recurse-submodules https://github.com/datharnu/haven-escrow
-cd haven-escrow
-npm ci
-npm run evidence
-```
-
-`npm run evidence` reads `deployments/*.json` and checks each hash on `qorechain-diana` through `@qorechain/mcp`. It needs no key. On 20 November 2026, after the four scenes, that command printed 68 passed and 0 failed. On 21 November 2026, after the Courier carry, it printed 79 passed and 0 failed. Re-run it. A later failure means a recorded hash no longer matches the chain.
-
-`forge test` and `npm run test:ts` need no chain and no key. They use a mock of the precompiles. A passing test is not a testnet receipt.
-
-## Check a signature in the browser
-
-On `/record`, **Verify this step** reads that transaction from `https://evm-testnet.qore.host`. **Verify all** reads every step. The page rebuilds the ML-DSA-87 message the contract builds, reads the signer's key from `pqcKeyStatus`, and checks the 4627-byte signature with `@qorechain/pqc`. It reads `Released` or `Resolved` and the fUSD `Transfer` logs, and compares the recipient with `client()` and `freelancer()` on the contract. A refused call is replayed at the previous block, because the receipt carries no revert bytes. The EVM receipt decides success or revert. The page does not send a transaction and it does not hold a key. A network failure says "Could not reach the testnet" and is never a pass.
-
-What this check does not prove, as of 21 November 2026:
-
-- The two steps with no hash were refused before broadcast. There is nothing on chain to read.
-- `autoRelease` has no signature. The page can show the receipt. It cannot show a signature that was not made.
-- The scene 2 cancel reverts `WrongStatus` before the signature is read, so the page does not judge that signature.
-- It does not call `resolveTimeout`. That call is not in the record.
-- It does not check the bytecode against the source. `forge test` and [docs/AUDIT.md](docs/AUDIT.md) are that check.
-- It covers the recorded transactions only.
-
-`@qorechain/pqc` 0.2.3 verifies in JavaScript. The page does not add `wasm-unsafe-eval`. The offline test replays a recorded RPC reply, so CI does not call the testnet. `HAVEN_LIVE_VERIFY=1 npm run smoke` is the browser run against the testnet.
-
-## On the web
-
-The site is the Next.js app in `apps/web`. It has no environment variables and it holds no key. Vercel builds it with the project's root directory set to `apps/web`. The install is `npm ci` and the build is `npm run build`. Leave both as the framework defaults. Do not set a root `vercel.json`. The security headers in `apps/web/next.config.ts` are the ones the production server sends, including `connect-src` for `https://evm-testnet.qore.host` only.
-
-The public copy is https://havenesc.vercel.app. Opened on 21 November 2026. **Verify all** on `/record` finished at 390px and at 1440px. The two-arbiter step read both ML-DSA-87 keys, verified both signatures, and matched `Resolved` 700000 to the freelancer and 300000 to the client. Horizontal overflow was 0. No step said "Could not reach the testnet".
-
-## What was measured
-
-All four scenes ran on 20 November 2026. Escrow A is `0xE22ff1Cd5d4B9a496C68FeD4946f2cE1dd8954Bd`. Escrow B is `0xffd1a9375Ab108Ebe0E439574b5e1D7aA050121A`. Amounts are fUSD base units. 1,000,000 is 1 fUSD.
-
-| What was measured | Result | Where |
-| --- | --- | --- |
-| Client releases milestone 0 after delivery | 1,000,000 fUSD to the freelancer named at creation | `0x2ef9eac1ad5f785e5ac8f984445b8a19977a01e6482ee1032d176cd4bbf1898a` |
-| Same classical key, inside a window the real client opened | Junk signature refused `SignatureInvalid`. Replayed milestone-0 signature refused `SignatureInvalid`. Escrow balance unchanged at 1,000,000 | `0x23d8d74315ded0ce5aa1cd19c820ffecfaa164bf1bd3ca32f08b2be81699fd9b`, `0xed3dcf05267a9ecddb4316fb615c5509e3f3e5df879f00d9e3320be389fd75d9` |
-| One arbiter, then two | One signature refused `TooFew`. Two of three signed 7000 bps. Freelancer received 700,000. Client received 300,000 | `0x4c3a8a79bb9bc95b0f29a7c2401917f160200f01df994478f36fb384785f5c42`, `0xd1fd4cac9a1565ee665df65d9d5f239e98ec72ec8fc9d25df7ce8099f079a448` |
-| Review of 120 seconds on escrow B | `autoRelease` before the review refused `TooEarly`. After the chain timestamp passed it, 1,000,000 went to the freelancer. No new signature | `0xd06ae211608d06ce12fa1810d21e946ce667067794569772e4c9ab7174507d87`, `0xf542a066e48d104fabcde058661775ccb3d3c9c6b538d7b52d97f1bb991cd558` |
-
-> **The contract is the guard.** A relayer can submit a signed call. The call still pays only the client or the freelancer, and only for the milestone and the amount inside the signature.
-
-| What has been observed | Where the boundary is |
+| What was tested on QoreChain Diana testnet | Measured result |
 | --- | --- |
-| A stolen secp256k1 key could not release or open a window | The rehearsal used the client's own classical key, inside a window that account had opened. It is not a stolen third-party key, and it is not a quantum break. The chain refused the signatures |
-| A relayer submitted a delivery and was not the signer | Spike submitted the freelancer's `deliver` for milestone 1. Spike's address is not the client, the freelancer, or an arbiter |
-| Two arbiters chose 70% to the freelancer | They could have signed any split from 0 to 10000. The chain does not stop two arbiters who agree |
-| One share of the file key was not enough to open the file | Refused in the scene-3 script before any transaction. Two shares were enough. The tooling opens them. The chain does not know the file |
-| The review timeout paid the freelancer | Escrow B's review was 120 seconds so the scene could wait. Escrow A's review is 1 day. A real job should use a long review. `resolveTimeout` was not called on testnet |
+| Client releases milestone 0 after delivery | 1.000000 fUSD paid to the named freelancer |
+| Client's own classical secp256k1 key tries five ways to take milestone 1 | **0.000000 fUSD moved** — all five attempts refused |
+| Dispute with one arbiter, then two of three signing a 70/30 split | One arbiter refused; two paid 0.700000 fUSD to freelancer and 0.300000 fUSD to client |
+| Review timeout (120-second demo window on Escrow B) | Early claim refused; claim after timeout paid 1.000000 fUSD with no new signature |
 
-## What the track asks for
+**Why not an existing escrow or multisig?** Standard EVM escrows authorize payouts with `msg.sender` (secp256k1), so a stolen classical key — or a future quantum break of ECDSA — can release or redirect funds. Haven Escrow ignores `msg.sender` on every sensitive action, requires fresh ML-DSA-87 signatures checked by QoreChain's `pqcVerify` precompile, and has no function that accepts a recipient address.
 
-The category requirements are the ones published on the [Prizes](https://build.qorechain.io/prizes) page: a scoped EVM window, `pqcVerify`, a two-stage QCAI audit, and Foundry or Hardhat tests. The jury's point weights are not published. This table is a map, not a score.
+**What is the biggest risk?** Two colluding arbiters out of three can sign any basis-point split between the two parties and combine their two Shamir shares to decrypt the deliverable; the chain does not judge fairness. In addition, the PQC precompiles (`pqcVerify` and `pqcKeyStatus`) live on QoreChain Diana testnet today, not mainnet.
 
-| Requirement | Where it holds | Limit |
-| --- | --- | --- |
-| Scoped EVM window | Create, fund, deliver, release, dispute, resolve, and the rehearsal each ran inside a window aimed at one contract. The factory deploy itself used an unscoped window, because a scoped window cannot create a contract from an EOA. Creating an escrow from the factory, inside a window aimed only at the factory, succeeded | The window is opened by the account's ML-DSA-87 key. The contract does not open windows |
-| `pqcVerify` | `deliver`, `release`, `dispute`, and `cancel` go through `PqAuth.authorize`. `resolve` goes through `PqQuorum`. Both call `0x…0a01`. The constructor calls `pqcKeyStatus` at `0x…0a02` for all five parties | HavenEscrow does not inline the precompile. The call sits in [haven-pq-kit](https://github.com/datharnu/haven-pq-kit) v0.1.0, which this repo vendors. The automatic checker looks for the address in runtime code. The factory's runtime code embeds the escrow initcode, which contains both addresses |
-| Two-stage QCAI audit | [docs/audit/stage-1-2026-11-21.pdf](docs/audit/stage-1-2026-11-21.pdf) and [docs/audit/stage-2-2026-11-21.pdf](docs/audit/stage-2-2026-11-21.pdf), Ethereum (EVM/Solidity), same source. Mapped in [docs/AUDIT.md](docs/AUDIT.md) | Both PDFs score 35/100. Every finding names a function that is not in the source. The contract was not changed to chase the score. Quantum readiness is "Not scored" on this setting, which the FAQ says is expected |
-| Foundry tests | `forge test` runs `test/HavenEscrow.t.sol`, `test/HavenEscrow.fuzz.t.sol`, `test/HavenEscrow.invariant.t.sol`, `test/EscrowFactory.t.sol`, and `test/Vectors.t.sol` | The mock signatures are keccak MACs of length 4627. They are not ML-DSA. Live signatures are only in the scene scripts |
-| Public repo, README, Apache-2.0 | This file and [LICENSE](LICENSE) | The featured image is [docs/featured.png](docs/featured.png), 1200×630. The film has not been recorded. The shot list is [docs/DEMO.md](docs/DEMO.md). The rules also ask for the film on the project page |
-| Original work during the fest | Written in November 2026. The payment rule is the same shape as [Meter](https://github.com/datharnu/Meter): a stored line, and no other recipient. The contracts were written for QoreChain | Kits are credited in [Credits](#credits), including the authorization interface |
+**How can a judge try it right now?** Open [havenesc.vercel.app/record](https://havenesc.vercel.app/record) and click **Verify all** to check every recorded ML-DSA-87 signature live against QoreChain Diana in the browser with no wallet, or clone the repo and run `npm run evidence` (98 checks, no keys needed).
+
+---
 
 ## Contents
 
 1. [The problem](#the-problem)
-2. [The rule](#the-rule)
-3. [How a milestone moves](#how-a-milestone-moves)
-4. [What this does not claim](#what-this-does-not-claim)
-5. [Addresses](#addresses)
-6. [Evidence](#evidence)
-7. [The audit](#the-audit)
-8. [Decisions](#decisions)
-9. [Stack](#stack)
-10. [Getting started](#getting-started)
-11. [Repo map](#repo-map)
-12. [What works today](#what-works-today)
-13. [Credits](#credits)
+2. [How it works](#how-it-works)
+3. [Hardest technical decision](#hardest-technical-decision)
+4. [Judge it in 5 minutes](#judge-it-in-5-minutes)
+5. [Where each attack or failure stops](#where-each-attack-or-failure-stops)
+6. [Rubric and track mapping](#rubric-and-track-mapping)
+7. [What works today](#what-works-today)
+8. [Known limits](#known-limits)
+9. [Run locally](#run-locally)
+10. [Repository map](#repository-map)
+11. [Roadmap](#roadmap)
+12. [Traction](#traction)
+13. [Built during the hackathon](#built-during-the-hackathon)
+14. [AI disclosure](#ai-disclosure)
+15. [Evidence: testnet addresses](#evidence-testnet-addresses)
+16. [Evidence: deploy, fund, and four scenes (20 November 2026)](#evidence-deploy-fund-and-four-scenes-20-november-2026)
+17. [Evidence: practice escrow and Courier carry (21 November 2026)](#evidence-practice-escrow-and-courier-carry-21-november-2026)
+18. [Evidence: precompile spike results](#evidence-precompile-spike-results)
+19. [Evidence: two-stage QCAI audit findings](#evidence-two-stage-qcai-audit-findings)
+20. [Evidence: Foundry tests, fuzzing, and invariants](#evidence-foundry-tests-fuzzing-and-invariants)
+21. [Evidence: design decisions and cost breakdown](#evidence-design-decisions-and-cost-breakdown)
+
+---
 
 ## The problem
 
-A client funds a job in stages. The freelancer wants to be paid when a stage is delivered. The client wants the money back if it is not. On an ordinary chain, the key that can send the transaction can also change who is paid. After a classical key is stolen, or after a quantum computer can forge secp256k1, that person is the new recipient.
+Private key compromises accounted for **43.8%** of all cryptocurrency stolen in 2024 ($2.2 billion total), and total stolen crypto surpassed **$3.4 billion** in 2025 ([Chainalysis, Dec 2024](https://www.chainalysis.com/blog/crypto-hacking-stolen-funds-2025/); [Dec 2025](https://www.chainalysis.com/blog/crypto-hacking-stolen-funds-2026/)).
 
-Haven is the job, not a general vault. Two people are named at creation. The file they are arguing about is encrypted. Two of three arbiters can settle the argument, and the same two can open the file. One cannot.
+On an ordinary EVM chain, the same secp256k1 key that submits a transaction also authorizes payouts. If a client's or freelancer's classical key is phished, leaked, or eventually broken by a quantum adversary, whoever holds that key can release funds or redirect them to their own address.
 
-No client is using this. The runs below are testnet.
+Haven Escrow narrows the blast radius to a single rule: **funds can leave an escrow only to the client or the freelancer fixed at creation, and every release requires either a fresh post-quantum ML-DSA-87 signature or a timeout both parties already accepted.**
 
-## The rule
+---
 
-> **The recipient is one of the two addresses stored at creation. The signature is ML-DSA-87, fresh, over this chain, this escrow, this signer, this action, this nonce, this deadline, and this milestone.**
+## How it works
 
-- **No function takes a recipient.** `release`, `autoRelease`, `refund`, `resolve`, `resolveTimeout`, `cancel`, and `sweep` pay `client` or `freelancer`. Both are immutable.
-- **The sender is not the signer.** `msg.sender` is ignored on `deliver`, `release`, `dispute`, `cancel`, and `resolve`. Spike submitted a delivery. The freelancer's signature is what the contract checked.
-- **A timeout is a term, not a new decision.** `autoRelease` pays the freelancer after the review, with no new signature. `resolveTimeout` applies `defaultSplitBps`, which was stored at creation. The demo uses 5000. Any rounding remainder goes to the client.
-- **The file is not on chain.** The chain stores a commitment. The ciphertext and the sealed envelopes are in `deployments/deliverables/`. Those files contain no file key and no Shamir share in the clear.
+An escrow fixes five registered ML-DSA-87 identities at creation: one client, one freelancer, and three arbiters (stored in ascending address order). Every payout function — `release`, `autoRelease`, `refund`, `resolve`, `resolveTimeout`, `cancel`, and `sweep` — pays only the immutable `client` or `freelancer` address. No function takes a recipient parameter.
 
-The longer list of refusals is [docs/disputes.md](docs/disputes.md). The attacker list is [THREAT_MODEL.md](THREAT_MODEL.md).
-
-## How a milestone moves
-
-```text
-Unfunded --> Funded --> Delivered --> Released
-                 |          |
-                 |          +--> Disputed --> Resolved
-                 |
-                 +--> Refunded
-Unfunded --> Cancelled
-Funded   --> Cancelled
+```mermaid
+flowchart LR
+    U[Unfunded] --> F[Funded]
+    F -->|deliver + ML-DSA-87| D[Delivered]
+    F -->|deadline passed| RF[Refunded]
+    U -->|both sign cancel| C[Cancelled]
+    F -->|both sign cancel| C
+    D -->|release + ML-DSA-87| RL[Released]
+    D -->|reviewPeriod passed| RL
+    D -->|dispute + ML-DSA-87| DS[Disputed]
+    DS -->|2-of-3 arbiters ML-DSA-87| RS[Resolved]
+    DS -->|arbiterTimeout passed| RS
 ```
 
-Released, Resolved, Refunded, and Cancelled are final. Time is the chain's block timestamp. At the exact boundary, the earlier action still works. One second later, it does not.
+- **Sender is not the signer.** `msg.sender` is ignored on `deliver`, `release`, `dispute`, `cancel`, and `resolve`. A third-party relayer can pay gas and submit a signed call without holding any authority over the milestone, amount, split, or recipient.
+- **Post-quantum verification on chain.** At deployment, `PqAuth.init` calls `pqcKeyStatus` (`0x0000000000000000000000000000000000000a02`) for all five parties and reverts if any key is missing, uses the wrong algorithm, or lacks proof of possession. Every signed action calls `pqcVerify` (`0x0000000000000000000000000000000000000a01`) over the chain ID, escrow address, signer, action, per-party nonce, deadline, and milestone arguments.
+- **Timeouts are agreed terms, not new decisions.** `autoRelease` pays the freelancer after `deliveredAt + reviewPeriod` with no new signature. `resolveTimeout` applies `defaultSplitBps` (5000 bps in the demo, remainder to the client) if the arbiters stay silent past `disputedAt + arbiterTimeout`. Boundary seconds belong to the earlier action (`<=` vs. `>`).
+- **Encrypted deliverables stay off chain.** The file is encrypted with a random 32-byte AES-256-GCM key, sealed to the client's ML-KEM-1024 key with QoreSeal, and split 2-of-3 with Shamir secret sharing (each share sealed to one arbiter). Only the commitment hash is stored on chain. One arbiter cannot read the file; two together can.
 
-`cancel` of a Delivered milestone reverts `WrongStatus` before it looks at the signature. That is why the rehearsal's cancel is `WrongStatus` and not `SignatureInvalid`. The check order was left as it is. A Delivered milestone is already past cancel.
+---
 
-`fund` marks milestones in order, up to the token balance. It cannot choose a payee. `sweep` sends a surplus of the same token to the client, and only when nothing is still `Unfunded`.
+## Hardest technical decision
 
-## What this does not claim
+**Keeping the contract minimal and refusing to chase a broken automated audit score.**
 
-| Claim we do not make | What is true instead |
-| --- | --- |
-| Two arbiters cannot cheat | They can sign any split, and together they can read the file. The chain does not stop them |
-| A dispute proves the work was bad | A dispute stops `autoRelease`. The split is whatever two arbiters sign, or 5000 bps if they never sign |
-| The QCAI score is a jury score | Both PDFs say 35/100. The FAQ says jurors read the PDF next to the explanation. [docs/AUDIT.md](docs/AUDIT.md) is that explanation |
-| The tests are live ML-DSA | Foundry has no precompiles. `npm run evidence` is the live check |
-| Mainnet | `pqcVerify` and `pqcKeyStatus` are on diana. The docs say they are not on mainnet yet |
-| A website a juror can click | `apps/web` replays the four scenes and checks the recorded signatures in the browser. `npm run web` serves it at http://localhost:3020. It is not deployed. It sends no transaction |
-| The pool bought the fUSD | Pool 2 quoted 178,034 base units for 6 QOR, under the 3.1 fUSD the scenes needed. No swap was sent. The client account claimed the faucet, and `MsgConvertCoin` moved 2 fUSD to escrow A and 1 fUSD to escrow B |
-| `resolveTimeout` has a testnet receipt | The function is in the contract and in the Foundry tests. Scene 3 settled before the arbiter timeout |
+The Build Before Q-Day Post-Quantum dApp track requires a two-stage QCAI dashboard audit. Both runs against `src/HavenEscrow.sol` scored **35/100** and flagged `withdraw`, `setFee`, `calculateFee`, `deposit`, `getBalances`, and admin functions — none of which exist anywhere in `src/`. Adding a `withdraw(address)` or admin setter to satisfy the scanner would have directly broken Haven Escrow's core invariant ("no function takes a recipient"). We left the contract unchanged, documented all 12 false positives with exact code and test references below, and kept status-before-signature checks intact even though `cancel` on a `Delivered` milestone returns `WrongStatus` instead of `SignatureInvalid` (because a delivered milestone is already past cancellation).
 
-## Addresses
+---
 
-| What | Address |
-| --- | --- |
-| EscrowFactory | `0xf30bfc219987E60e849D5cF9e7351b7380eEc09B` |
-| Escrow A, two milestones | `0xE22ff1Cd5d4B9a496C68FeD4946f2cE1dd8954Bd` |
-| Escrow B, one milestone, 120-second review | `0xffd1a9375Ab108Ebe0E439574b5e1D7aA050121A` |
-| fUSD, 6 decimals | `0x97143B771D34ddb9130b807b135Ae675A5a963CA` |
-| Client | `qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q` / `0xB911fD43FC85826947d1E11084e594f8b9D466bf` |
-| Freelancer | `qor1f5x5jggqyg8e05rlaf5xztlwwrlsxamy9j2pxw` / `0x4D0D492100220F97d07fEa68612fee70ff037764` |
-| Arbiter 1 | `qor12kfhuvhykw7k9fyukaexldjw07d2m9zuu9un4v` / `0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C` |
-| Arbiter 2 | `qor1qranaxl35r95mue9qyqqffvhytcvdgjg5agc9e` / `0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248` |
-| Arbiter 3 | `qor1lq0x9xwwcnsv79hat5q56ycg8hhvvyr9ymya83` / `0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065` |
-| Spike, deployer and relayer, not a party | `qor143f0ghn8slqguwez73087dvq8lqnuuukqdu9fl` / `0xaC52f45E6787c08E3B22f45e7f35803Fc13e7396` |
-| SpikeTarget, the precompile spike, not the product | `0xe11fe2bb1ad13ab116e0d362b218ef1b2330b1a7` |
-| Precompiles | `pqcVerify` `0x0000000000000000000000000000000000000a01`, `pqcKeyStatus` `0x0000000000000000000000000000000000000a02` |
+## Judge it in 5 minutes
 
-The arbiters are stored in ascending address order: arbiter 2, arbiter 1, arbiter 3. `resolve` requires the same order. The freelancer has no ML-KEM key. The file is not sealed to the freelancer. The client and the three arbiters published ML-KEM-1024 keys. Public cards are in `cards/`.
+Everything below runs on QoreChain Diana (`qorechain-diana`, EVM chain ID `9800`) using test fUSD with no real value. If the live testnet RPC is unreachable, `/record` still replays all four recorded scenes and displays `"Could not reach the testnet"` rather than a false pass (see [Known limits](#known-limits)).
 
-Explorer links for the native transactions use https://explore.qore.network. The `0x` hashes above are EVM transaction hashes stored in `deployments/`. `npm run evidence` is the check that they landed.
+1. **Browser replay and live signature check (no wallet, no setup).**
+   Open [havenesc.vercel.app/record](https://havenesc.vercel.app/record) and click **Verify all**. The page reads each recorded transaction from `https://evm-testnet.qore.host`, rebuilds the exact ML-DSA-87 message, fetches the signer's key from `pqcKeyStatus`, verifies the 4,627-byte signature in JavaScript via `@qorechain/pqc`, and matches `Released`/`Resolved` and fUSD `Transfer` logs against `client()` and `freelancer()`. It sends no transactions and holds no keys.
+2. **Interactive practice desk (browser identities, optional faucet).**
+   Open [havenesc.vercel.app/practice](https://havenesc.vercel.app/practice) to generate five fresh local browser identities, fund from the Diana faucet or QoreX, create a live 0.1 fUSD escrow, rehearse the classical-key attack, and run the **Courier delivers, Escrow pays** flow.
+3. **One-command hash verification from a clone (no keys).**
+   ```bash
+   git clone --recurse-submodules https://github.com/datharnu/haven-escrow
+   cd haven-escrow
+   npm ci
+   npm run evidence
+   ```
+   `npm run evidence` reads `deployments/*.json` and re-checks every recorded hash on `qorechain-diana` via `@qorechain/mcp`. On 23 November 2026 it printed **98 passed, 0 failed** (68 passed after the four scenes on 20 November 2026; 79 passed after the Courier carry on 21 November 2026).
+4. **Offline contract, TypeScript, and CBOM tests (no chain, no keys).**
+   ```bash
+   forge test
+   npm run test:ts
+   npm run cbom:check
+   ```
+   `npm run cbom:check` verifies no contract uses `ecrecover` or bypasses the two PQC precompiles, and proves it still catches `ecrecover` against `scripts/fixtures/ecrecover/`.
 
-## Evidence
+---
 
-The scene scripts refuse to run again once their report has `ok: true`. Do not re-send them. Re-read them.
+## Where each attack or failure stops
 
-### Deploy and fund
+- **Classical key calls `release` with no open EVM window:** refused before broadcast by the QoreChain node (`no open EVM authorisation window`); no transaction hash is created.
+- **Classical key calls `MsgOpenEVMWindow` without hybrid PQC signature:** refused by QoreChain with `code 20` (`hybrid PQC signature required`); no window opens.
+- **Classical key sends a junk 4,627-byte signature inside a window the real client opened:** reverted on chain with `SignatureInvalid` at `pqcVerify` (`0x…0a01`); 0.000000 fUSD moved.
+- **Attacker replays milestone 0's valid ML-DSA-87 signature on milestone 1:** reverted on chain with `SignatureInvalid` (nonce and milestone index are bound in the signed message); 0.000000 fUSD moved.
+- **Attacker calls a forged `release(uint256,address)` to redirect funds:** reverts immediately; no function on `HavenEscrow` accepts a recipient address.
+- **Rogue relayer alters milestone, amount, split, or payee before submitting:** signature check fails with `SignatureInvalid`; relayer can only submit verbatim or censor.
+- **One arbiter tries to settle a dispute alone:** reverted on chain with `TooFew` (2-of-3 quorum required), and one Shamir share fails locally to open the deliverable.
+- **Freelancer calls `autoRelease` before the review period ends:** reverted on chain with `TooEarly` (even at the exact boundary second `deliveredAt + reviewPeriod`).
+- **All three arbiters stay silent after a dispute:** after `disputedAt + arbiterTimeout`, anyone can call `resolveTimeout` to apply the pre-agreed `defaultSplitBps` (5000 bps).
+- **Reentrant token callback during payout:** reverted with `Reentrancy` (`lock` modifier) after `paidToClient`/`paidToFreelancer` is already updated.
+- **Attacker tries to `cancel` an already `Delivered` milestone:** reverted with `WrongStatus` before signature verification.
 
-| Step | Hash | Note |
+---
+
+## Rubric and track mapping
+
+Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bounty **Post-Quantum dApp** ("Build an EVM dApp whose sensitive actions receive post-quantum protection"; example projects include *escrow*). Submission deadline: **2 December 2026 at 23:59 UTC**. Jury point weights are not published; every requirement from the Prizes page is mapped below with its honest limit.
+
+| Requirement (exact hackathon wording) | Where Haven Escrow proves it | Honest limit |
 | --- | --- | --- |
-| Deploy EscrowFactory | `0x3a8fed59201dac842c9c05cae11d72d59d27c8da108964f5206f58b975cac309` | Unscoped window. Gas used 2,624,556. Fee 295,263 uqor. The budget for that window was 354,316, under the 5,000,000 cap |
-| Create escrow A | `0x9b7288add82823a392fc667819f33a54ff348b8e0df37bfeeef7468c642fab80` | Same scoped window as B, target the factory only |
-| Create escrow B | `0xf4ac289cd80be0c2ac48818b39fddb4eb1118c9ae9bbc805e9111064b99badc2` | Review 120 seconds. Everything else matches A |
-| Convert faucet fUSD | `9270876CBEF1759C772B7DA3E77C3D5915F6FF6178A68435D5AFFB067C59FBFF` | 2,000,000 base units to A, 1,000,000 to B. No pool swap |
-| Fund A, then B | `0x3030d499ae0f75dd9d22d5aacb1a0dce8540f4c01b92f952a12c7bb7a942cb16`, `0xcdc73b477528d302b38c30830c8e4a35235f174d08eb0b09c195a72481be3929` | One window, targets A and B |
+| **Scoped EVM window** | Create, fund, deliver, release, dispute, resolve, and the classical-key rehearsal each ran inside a scoped EVM window aimed at one contract (or `[A, B]` for funding). `EscrowFactory.create` runs inside a window scoped to `[factory]`. | Deploying `EscrowFactory` itself used an unscoped window because a scoped window cannot create a contract from an EOA. The account's ML-DSA-87 key opens windows; the contract does not. |
+| **`pqcVerify`** | `deliver`, `release`, `dispute`, and `cancel` call `PqAuth.authorize`; `resolve` calls `PqQuorum` — both call `pqcVerify` (`0x…0a01`). Constructor calls `pqcKeyStatus` (`0x…0a02`) for all five parties. | The precompile calls live in vendored `haven-pq-kit` v0.1.0 rather than inlined in `HavenEscrow.sol`. `EscrowFactory` runtime code embeds the escrow initcode containing both addresses. |
+| **Two-stage QCAI audit** | Both PDFs are committed at `docs/audit/stage-1-2026-11-21.pdf` and `docs/audit/stage-2-2026-11-21.pdf`, with all 12 findings mapped below and in `docs/AUDIT.md`. | Both PDFs score 35/100 on the Ethereum (EVM/Solidity) setting and flag functions not in `src/`. Quantum readiness is `"Not scored"` on this setting (expected per FAQ). |
+| **Foundry or Hardhat tests** | `forge test` runs 61 Foundry tests across unit, fuzz (256 runs), invariant (64 runs, 2,560 calls), factory, and byte-vector suites; `npm run test:ts` and `apps/web` Vitest add 39 web unit tests. | Foundry has no QoreChain precompiles, so tests use 4,627-byte keccak mock signatures. Live ML-DSA-87 signatures are proven on Diana testnet and re-checked by `npm run evidence` and `/record`. |
+| **Public GitHub repository under MIT or Apache-2.0** | `https://github.com/datharnu/haven-escrow`, Apache-2.0 (`LICENSE`). | Explorer source verification is not available on Diana explorer; compiler settings are in `foundry.toml`. |
+| **README and testnet addresses** | This single-file `README.md` contains all addresses, hashes, audit findings, and limits. | Testnet only (`qorechain-diana`, chain ID 9800); fUSD has no monetary value. |
+| **Video of up to 3 minutes** | Shot list is ready in `docs/DEMO.md`; featured image is `docs/featured.png`. | **Not recorded yet.** Must be recorded and linked before 2 December 2026. |
+| **Built during the event & open-source credits** | First commit `6343063` on 20 November 2026; all kits and libraries credited below. | Shares the two-name immutable-line design shape from the author's earlier project Meter; all contracts here were written fresh for QoreChain. |
 
-Escrow A: amounts 1,000,000 and 1,000,000, review 86,400 seconds, arbiter timeout 259,200 seconds, `defaultSplitBps` 5000. Escrow B: one milestone of 1,000,000, review 120 seconds, the same timeout and split.
+---
 
-### Scene 1, a normal release
+## What works today
 
-The freelancer delivered milestone 0. The client released it. The freelancer's fUSD balance rose by 1,000,000. Spike then submitted the freelancer's delivery of milestone 1. Spike did not sign it.
+### Observed
 
-| Step | Hash |
-| --- | --- |
-| Deliver A milestone 0 | `0xd161906d3089aa0590d8bf031852abf611c103f8ccd6d30403e95a192971d9be` |
-| Release A milestone 0 | `0x2ef9eac1ad5f785e5ac8f984445b8a19977a01e6482ee1032d176cd4bbf1898a` |
-| Spike submits deliver A milestone 1 | `0xfaaf878f74237747f26e6994bd45db51ac457f74b0709ca313e15c98fde4a978` |
+- **Deploy and four end-to-end scenes on `qorechain-diana` (20 November 2026):** `EscrowFactory`, Escrow A (two milestones, 1-day review), Escrow B (one milestone, 120-second review), normal release, relayer-submitted delivery, five classical-key refusals, one-arbiter refusal, two-arbiter 70/30 split, early `autoRelease` refusal, and real-wait `autoRelease` payout.
+- **Practice escrow on `qorechain-diana` (21 November 2026):** Escrow `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90` created, funded, receipted on `DeliveryReceipts`, delivered, and tested against a zero-signature release (reverted) and classical open (refused before broadcast).
+- **Courier carry and escrow payout on `qorechain-diana` (21 November 2026):** Escrow `0x14312980702C0e2c9b85f3478ba9396e59054706` — Courier sealed one file in the browser, the client opened it and recorded the receipt on `DeliveryReceipts`, the freelancer delivered the matching commitment, the page verified `receipt()`, and the client released 100,000 fUSD base units to the stored freelancer.
+- **Silent-panel timeout (`resolveTimeout`) on `qorechain-diana` (23 November 2026):** Escrow C (`0xB4410fcC2348212e22c10c1ed302f17225F6F49b`, 0.1 fUSD, 60-second `arbiterTimeout`, 5000 bps default split) — delivered, disputed with client's ML-DSA-87 signature, early `resolveTimeout(0)` refused `TooEarly`, then after a real 60-second wait `resolveTimeout(0)` paid `+50,000` fUSD base units to the client and `+50,000` to the freelancer (Escrow C balance `0`).
+- **Automated evidence verification:** `npm run evidence` printed **98 passed, 0 failed** on 23 November 2026 (79 passed on 21 November 2026; 68 passed on 20 November 2026).
+- **Live browser verification:** Opened `https://havenesc.vercel.app/record` on 21 November 2026 at 390px and 1440px; **Verify all** verified both ML-DSA-87 signatures on the two-arbiter step, matched 700,000 to freelancer and 300,000 to client, with 0 horizontal overflow and 0 RPC errors.
+- **Cryptography and CI checks:** `npm run cbom:check` passed locally on 21 November 2026 (catching the `ecrecover` fixture). GitHub Actions workflow `.github/workflows/test.yml` went green on 21 November 2026 (run `44886746463`, contract + cryptography job); all 39 web unit tests, TypeScript checks, and production build pass locally.
 
-The ciphertext is in `deployments/deliverables/`. The file key is not.
+### Built, not observed
 
-### Scene 2, the classical key
+- **CI web smoke job:** Added to `.github/workflows/test.yml` after green run `44886746463`; verified locally via `npm run smoke` and `next build`.
+- **Escrow B deliverable manifest in the browser UI:** Verified by unit test, not displayed on the timeout scene in `/record`.
 
-No window: the node refused the release before broadcast. Text is in `deployments/scene-2-rehearse.json` under `noWindow`. A classical `MsgOpenEVMWindow` was refused with code 20, `hybrid PQC signature required`. It was not accepted, and no window was closed because none opened.
+### Deliberately absent
 
-Inside a window the client had opened, the same classical key was used as the attacker:
+- **Mainnet deployment:** `pqcVerify` and `pqcKeyStatus` are on Diana testnet only, not QoreChain mainnet.
+- **Admin, owner, fee, or upgrade role:** Excluded by design so no third party can alter terms or redirect funds.
+- **On-chain deliverable storage:** Only the commitment hash is stored on chain; ciphertext and sealed envelopes stay off chain.
+- **Automated DEX swap for funding:** Pool 2 quoted 178,034 fUSD base units for 6 QOR (below the 3,100,000 needed), so `scripts/fund-client.ts` refuses to swap and uses faucet `MsgConvertCoin` instead.
+- **Bytecode-vs-source check in the browser UI:** The **No third name** panel inspects state-changing ABI functions and recorded fUSD transfers; bytecode equivalence is covered by `forge test` and the audit mapping.
 
-| Attempt | Hash | Error |
-| --- | --- | --- |
-| `release(1)` with a junk signature | `0x23d8d74315ded0ce5aa1cd19c820ffecfaa164bf1bd3ca32f08b2be81699fd9b` | `SignatureInvalid` |
-| `release(1)` with the milestone-0 signature | `0xed3dcf05267a9ecddb4316fb615c5509e3f3e5df879f00d9e3320be389fd75d9` | `SignatureInvalid` |
-| `cancel(1)` with junk signatures | `0x17fc1668ac8125d0cf5e05fee09875d4fc4578de656baba7ca3673cea86f3b8b` | `WrongStatus` |
+---
 
-A call to a made-up `release(uint256,address)` was an `eth_call` only. It reverted. It was not sent. The escrow's fUSD balance was 1,000,000 before and after. That 1,000,000 was milestone 1, still held. Milestone 0 had already been paid.
+## Known limits
 
-### Scene 3, a dispute
+- **Two colluding arbiters (biggest product risk):** Any two of the three arbiters can sign any split from 0 to 10000 bps and can combine their two Shamir shares to decrypt the deliverable. The contract does not judge whether their split is fair.
+- **Testnet-only PQC precompiles (biggest dependency risk):** `pqcVerify` (`0x…0a01`) and `pqcKeyStatus` (`0x…0a02`) exist only on `qorechain-diana` today; moving to mainnet depends on QoreChain enabling those precompiles on mainnet.
+- **Testnet RPC availability:** Browser signature checks on `/record` read directly from `https://evm-testnet.qore.host`. If the RPC is down, the page reports `"Could not reach the testnet"` and never fakes a pass.
+- **Browser verification scope:** The two steps refused before broadcast have no on-chain hash to read; `autoRelease` has no signature to check; Scene 2 `cancel` reverts `WrongStatus` before checking the signature; `/record` covers only the recorded transactions.
+- **No off-chain key or file recovery:** If the ciphertext, AES file key, or arbiter Shamir shares are lost off chain, the contract cannot reconstruct them.
+- **Public deal metadata:** Party addresses, milestone amounts, review/arbiter deadlines, and deliverable commitment hashes are public on chain.
+- **Demo review timing vs. production:** Escrow B used a 120-second review period so Scene 4 could wait in real time without warping timestamps; real jobs should use long review windows (e.g., 14 days).
+- **HavenEscrow does not read `DeliveryReceipts`:** In the Courier carry flow, the browser reads `receipt()` and matches the ciphertext hash before release; the escrow contract itself remains standalone and does not call `DeliveryReceipts`.
+- **No explorer source verification:** Diana's explorer does not support verified Solidity source yet; compiler settings (`0.8.28`, optimizer 200 runs, `via_ir`) are in `foundry.toml`.
 
-The client disputed milestone 1. One arbiter share was refused locally. Two shares opened the same plaintext hash. A `resolve` signed only by arbiter 1 reverted `TooFew`. Arbiter 3 then submitted `resolve(1, 7000)` signed by arbiter 1 and arbiter 2.
+---
 
-| Step | Hash |
-| --- | --- |
-| Dispute | `0x7d1d63d40abce0ae8007f7277d262f146958e124a6b86ba173ad48510aa6f463` |
-| One arbiter | `0x4c3a8a79bb9bc95b0f29a7c2401917f160200f01df994478f36fb384785f5c42` |
-| Two arbiters, 7000 bps | `0xd1fd4cac9a1565ee665df65d9d5f239e98ec72ec8fc9d25df7ce8099f079a448` |
+## Run locally
 
-Against the balances taken immediately before that resolve: freelancer plus 700,000, client plus 300,000.
-
-### Scene 4, the review timeout
-
-| Step | Hash | Result |
-| --- | --- | --- |
-| Deliver B | `0x40735fcf9943cd77ff5bd24ab4541ef8f6f92b47107d0fb9e58b803825c8d37f` | Delivered |
-| `autoRelease` during the 120 seconds | `0xd06ae211608d06ce12fa1810d21e946ce667067794569772e4c9ab7174507d87` | `TooEarly` |
-| `autoRelease` after the chain timestamp passed the review | `0xf542a066e48d104fabcde058661775ccb3d3c9c6b538d7b52d97f1bb991cd558` | 1,000,000 to the freelancer |
-
-The wait was real. The script does not warp time. Equal to `deliveredAt + 120` is still `TooEarly`.
-
-### The precompile spike
-
-`SpikeTarget` at `0xe11fe2bb1ad13ab116e0d362b218ef1b2330b1a7` is not an escrow. Its constructor calls `pqcKeyStatus`. Its `ping` calls `pqcVerify`. Deployment `0xac057fd48140b66e250f248bb0e4035820d8679e1629bdfd42f964cd333ee358`. A replay of that ping reverted `SignatureInvalid` at `0xd5634f54f8673f85fc30db6be66571e283c8e0c247ffaf3d293cfb87551830ac`. A contract created from inside a scoped window succeeded at `0xa0021315f5db9a2fd875749e20412914563fbadc681ab3da3deada90716dc2e0`. The notes are in [docs/spikes.md](docs/spikes.md).
-
-## The audit
-
-Both runs used Ethereum (EVM/Solidity) on the same `HavenEscrow.sol`. Quantum readiness is not scored. That is the setting the FAQ tells Solidity projects to use.
-
-| Stage | File | Generated | Score | Risk on the PDF |
-| --- | --- | --- | --- | --- |
-| 1 | [docs/audit/stage-1-2026-11-21.pdf](docs/audit/stage-1-2026-11-21.pdf) | 21 November 2026, 09:04 | 35/100 | CRITICAL |
-| 2 | [docs/audit/stage-2-2026-11-21.pdf](docs/audit/stage-2-2026-11-21.pdf) | 21 November 2026, 09:22 | 35/100 | HIGH |
-
-Stage 1 names `withdraw`, admin functions, and batch processing. Stage 2 names `withdraw`, `setFee`, `calculateFee`, `deposit`, and `getBalances`. None of those functions are in `src/`. Each row in [docs/AUDIT.md](docs/AUDIT.md) says why, and names the test or the code that covers the real behaviour. The source was not edited between the two runs. The score did not move. Adding those functions to raise the percentage would invent the bug the report imagines, and a `withdraw(address)` would break the rule.
-
-The project-page field "How it's made" should point at `docs/AUDIT.md`.
-
-## Decisions
-
-| Decision | Why | Date |
-| --- | --- | --- |
-| 5000 bps if the arbiters stay silent | A full refund or a full payment would reward the side that benefits from a silent panel. The remainder of the rounding goes to the client | 20 November 2026 |
-| Status is checked before the signature | A Delivered milestone cannot be cancelled. The rehearsal records `WrongStatus`. Reordering the checks to chase `SignatureInvalid` was rejected | 20 November 2026 |
-| No clone factory | HavenEscrow is 7,876 bytes and the factory is 11,922, both under the 24,576 limit. `create` uses `new` | Measured at build |
-| The relayer has no authority | Spike deploys, funds new accounts, and submits. Spike is not a party and is not an arbiter | Kept through the scenes |
-| No pool swap under 6 QOR | The quote was 178,034 base units. The scenes needed 3,100,000. The faucet claim was converted instead | 20 November 2026 |
-| Demo review of 120 seconds, product review of 1 day | The short review is so a juror can see `TooEarly` and then the release. A real escrow should use a long review, on the order of 14 days | 20 November 2026 |
-
-## Stack
-
-Solidity 0.8.28, Foundry, optimizer 200 runs, `via_ir`. Fuzz 256 runs. Invariant 64 runs, depth 40. TypeScript on Node 22. viem 2.47.6. `@qorechain/sdk` 0.14.0, `pqc` 0.2.3, `qoreseal` 0.1.0, `qoresign` 0.1.0, `mcp` 0.1.1, `evm` 0.14.0. haven-pq-kit v0.1.0. AES-256-GCM from `@noble/ciphers`. Shamir 2-of-3 from `shamir-secret-sharing` 0.0.4.
-
-The native fee in the scripts is 180,000 uqor and the gas limit is 1,200,000. Those numbers were not lowered. Window budgets: deploy 5,000,000 uqor, a contract call 2,000,000, a resolve 3,000,000. The largest fee in the scenes was the factory deploy, 295,263 uqor.
-
-## Getting started
-
-Node 22 and Foundry.
+Prerequisites: **Node 22** and **Foundry** (`forge`).
 
 ```bash
 git clone --recurse-submodules https://github.com/datharnu/haven-escrow
 cd haven-escrow
 npm ci
+
+# Offline contract, TypeScript, vector, and cryptography checks (no chain, no keys)
 forge test
 npm run test:ts
 npm run typecheck
+npm run cbom:check
+
+# Live testnet hash verification (no keys required)
 npm run evidence
-npm run web               # http://localhost:3020, replay only, no wallet
+
+# Local web app (http://localhost:3020 — replay + browser verify + practice desk)
+npm run web
 ```
 
-The site's own checks:
+Web app checks:
 
 ```bash
 cd apps/web
 npm ci
 npm run typecheck
-npm run test:unit         # vectors, and the recorded RPC reply, offline
-npm run smoke             # Playwright, production build, at 390 and 1440
+npm run test:unit         # 39 unit tests (vectors, Courier carry, recorded RPC replies)
+npm run build             # production Next.js build
+npm run smoke             # Playwright smoke at 390px and 1440px (set HAVEN_LIVE_VERIFY=1 for live RPC)
 ```
 
-`npm run deploy`, `npm run fund-client`, `npm run scene:1`, `npm run rehearse`, `npm run scene:3`, and `npm run scene:4` send transactions. Each one throws if its report already has `ok: true`. They read keys from `~/.haven/<name>.env`, mode 0600, which is not in the repository.
+Live transaction scripts (`npm run deploy`, `npm run fund-client`, `npm run scene:1`, `npm run rehearse`, `npm run scene:3`, `npm run scene:4`, `npm run scene:5`) read private keys from `~/.haven/<name>.env` (mode `0600`, never committed) and throw `already ran` once their report in `deployments/` has `ok: true`.
 
-`npm run vectors` writes `vectors/escrow.json`. `test/Vectors.t.sol` reads it. `npm run cbom:check` fails if a contract reaches ML-DSA other than through the two precompiles, or if it uses `ecrecover`. It also refuses the fixture in `scripts/fixtures/ecrecover/`, which exists so the check can prove it still catches a classical signature. `npm run cbom` writes `cbom.json` and includes the client account. That file is not committed.
+---
 
-## Repo map
+## Repository map
 
-| Path | What it is |
+| Path | Responsibility |
 | --- | --- |
-| `src/HavenEscrow.sol` | The escrow. Immutable parties. One token. At most 8 milestones |
-| `src/EscrowFactory.sol` | `create` deploys one escrow. No clones |
-| `src/EscrowArgs.sol` | The creation struct |
-| `src/ts/escrow.ts` | Sign a delivery, a release, a dispute, a cancel, a resolve |
-| `src/ts/deliverable.ts` | Seal the file to the client. Split the file key 2-of-3 for the arbiters |
-| `src/spike/SpikeTarget.sol` | The precompile spike. Not a party to any escrow |
-| `test/` | Foundry unit, fuzz, invariant, factory, and byte vectors |
-| `test/ts/` | Vitest for the TypeScript signer and the deliverable |
-| `apps/web` | The replay and the practice deal. `/` is the rule. `/record` walks the four scenes. `/practice` makes browser identities |
-| `scripts/cbom.ts` | QoreScan inventory, plus the precompile and `ecrecover` check |
-| `scripts/` | Deploy and the four scenes. They stop once the report is `ok` |
-| `deployments/` | The hashes. `npm run evidence` reads these |
-| `deployments/deliverables/` | Ciphertext and sealed envelopes. No file key |
-| `cards/` | Public ML-KEM cards for the client and the three arbiters |
-| `docs/AUDIT.md` | Each audit finding, and what we did with it |
-| `docs/disputes.md` | States, deadlines, and the refusal names |
-| `docs/qcai.md` | Why the audit is the dashboard, and the FAQ lines we relied on |
-| `docs/spikes.md` | The four spike results |
-| `THREAT_MODEL.md` | Who the rule stops, and who it does not |
-| `vectors/escrow.json` | The signed-message bytes the Solidity test checks |
+| `src/HavenEscrow.sol` | Milestone escrow contract: immutable parties, one ERC-20 token, up to 8 milestones, `PqAuth` / `PqQuorum` checks |
+| `src/EscrowFactory.sol` | Deploys fresh `HavenEscrow` instances (`new`, no clones) inside a scoped EVM window |
+| `src/EscrowArgs.sol` | Creation struct for escrow terms |
+| `src/spike/SpikeTarget.sol` | Precompile spike contract (not a party to any escrow) |
+| `src/ts/escrow.ts` | TypeScript ML-DSA-87 signer for deliver, release, dispute, cancel, and resolve |
+| `src/ts/deliverable.ts` | Client-side AES-256-GCM encryption, ML-KEM-1024 QoreSeal, and 2-of-3 Shamir key splitting |
+| `lib/haven-pq-kit/` | Vendored `haven-pq-kit` v0.1.0 (`PqAuth`, `PqQuorum`, precompile wrappers) |
+| `test/` | Foundry unit, fuzz, invariant, factory, and byte-vector tests (61 tests) |
+| `test/ts/` | Vitest suite for TypeScript signing, deliverables, and web ABI sync |
+| `apps/web/` | Next.js 16 app: `/` (rule & refusals), `/record` (four-scene replay & live browser PQC verifier), `/practice` (browser identities & Courier carry) |
+| `scripts/` | Deploy, five testnet scenes, `evidence.ts` (98-check verifier), `cbom.ts` (QoreScan + `ecrecover` check), and `vectors.ts` |
+| `deployments/` | Recorded testnet hashes, deliverables (ciphertext + sealed envelopes, no file keys), practice, Courier carry, and Scene 5 `resolveTimeout` JSONs |
+| `cards/` | Public ML-KEM-1024 cards for the client and three arbiters |
+| `docs/audit/` | Stage 1 and Stage 2 QCAI audit PDFs (`stage-1-2026-11-21.pdf`, `stage-2-2026-11-21.pdf`) |
+| `vectors/escrow.json` | Signed-message byte vectors shared by TypeScript and `test/Vectors.t.sol` |
 
-## What works today
+---
 
-On testnet, as recorded on 20 November 2026:
+## Roadmap
 
-- A factory and two escrows, funded in fUSD.
-- A delivery, a client release, and a relayer submitting someone else's signature.
-- A classical key refused, including with no window and with a classical open.
-- A dispute, a one-arbiter refusal, and a two-arbiter split paid to the two named parties.
-- An early timeout refused, then a timeout release after a real wait.
-- An evidence check of the recorded hashes.
-- A practice path on testnet, recorded on 21 November 2026 in `deployments/practice.json`. Escrow `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90`. Create, fund, the receipt, and deliver are classical. The zero-signature release reverted. The classical open has no hash. Milestone 0 status is 2 and the escrow holds 100000 fUSD base units. Courier did not carry the file. HavenEscrow does not read DeliveryReceipts.
-- Courier carried one file on 21 November 2026. Escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. The client opened the file and signed the receipt. DeliveryReceipts recorded ciphertext `0x7d0cf82a1ba8b2bddbf7b4c2f2cd356c877771494be8ac2181c1cd758fb05b74`. The freelancer delivered that ciphertext. The page read `receipt()` and the hash matched. The client released 100000 fUSD base units to the stored freelancer `0x8c7b839B916554803b3356cE05233B36b73aC3FF`. HavenEscrow does not read DeliveryReceipts. The hashes are in `deployments/courier-pays.json`.
-- Two audit PDFs and the finding map.
-- `npm run cbom:check` passed locally on 21 November 2026. It caught the `ecrecover` fixture.
-- A GitHub Actions workflow at `.github/workflows/test.yml`. The contract and cryptography job went green on 21 November 2026 (run 44886746463). That run did not include the web smoke job, which is in the workflow now.
+1. **Before 2 December 2026:** Record and publish the ≤3-minute demo film following `docs/DEMO.md`.
+2. **Security:** Commission an external Solidity + post-quantum security audit before any real-value use.
+3. **Mainnet:** Deploy `EscrowFactory` on QoreChain mainnet once `pqcVerify` and `pqcKeyStatus` are enabled on mainnet, with production review defaults (14 days).
 
-Not in the repo yet, and not claimed:
+---
 
-- A bytecode comparison inside the No third name panel. The panel lists the state-changing functions and reads the recorded fUSD transfers. It does not check the bytecode against the source. The Foundry tests and docs/AUDIT.md do.
-- The sealed file is on `/record` for scenes 1 and 3. The page recomputes the commitment from the published ciphertext and the three envelopes. It does not open the file, and it does not show a share or the file key. Escrow B's manifest is checked by the unit test and is not on the timeout scene.
-- A film. The shot list is [docs/DEMO.md](docs/DEMO.md). The featured image is [docs/featured.png](docs/featured.png). The film itself has not been recorded.
-- A testnet call to `resolveTimeout`. The silent-panel path is in Foundry. The live dispute was settled by two arbiters first. The practice page does not call it.
-- Source verification on the explorer. The explorer has none. The compiler settings are in `foundry.toml`.
+## Traction
 
-## Credits
+No external users or customers yet; all runs are our own testnet proofs on `qorechain-diana` — pilot next.
 
-Written during the fest, November 2026. It builds on:
+---
 
-- **Haven family:** Courier carried one file for practice escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. The page read `receipt()` and the ciphertext hash matched. HavenEscrow does not read DeliveryReceipts. The hashes are in `deployments/courier-pays.json`. Steward does not call this escrow. [docs/kits.md](docs/kits.md) is the map. [AI_USAGE.md](AI_USAGE.md) says what a person decided.
-- **QoreChain kits:** `@qorechain/sdk`, `@qorechain/pqc`, `@qorechain/qoreseal`, `@qorechain/qoresign`, `@qorechain/mcp`, `@qorechain/qorescan`, `@qorechain/evm`, `@qorechain/wallet-adapter`, and `@qorechain/qorex-types`. The last two add the testnet to MetaMask and let QoreX send test QOR. They do not sign a release.
-- **haven-pq-kit v0.1.0:** https://github.com/datharnu/haven-pq-kit. `PqAuth` and `PqQuorum` are the signature checks. The submodule is pinned to commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`. Their interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr, Apache-2.0. The implementation was written for Haven.
-- **Meter:** the earlier rule that a stored payment line has one recipient. The idea was kept. The contracts were written for this chain.
-- **Other libraries:** viem, `@cosmjs/stargate`, `@noble/ciphers`, `@noble/hashes`, `shamir-secret-sharing`, forge-std, Vitest, tsx, and TypeScript.
+## Built during the hackathon
 
-## Licence
+Built during **Build Before Q-Day** (November 2026; deadline 2 December 2026 at 23:59 UTC). First commit: `6343063` on **20 November 2026** (`Add the Apache-2.0 license.`). Licence: **Apache-2.0** (`LICENSE`).
 
-Apache-2.0. See [LICENSE](LICENSE).
+**Credits and open-source libraries:**
+- **QoreChain kits:** `@qorechain/sdk` 0.14.0, `@qorechain/pqc` 0.2.3, `@qorechain/qoreseal` 0.1.0, `@qorechain/qoresign` 0.1.0, `@qorechain/mcp` 0.1.1, `@qorechain/qorescan` 0.1.0, `@qorechain/evm` 0.14.0, `@qorechain/wallet-adapter` 0.6.0, `@qorechain/qorex-types` 0.1.0.
+- **`haven-pq-kit` v0.1.0:** `https://github.com/datharnu/haven-pq-kit` (submodule commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`). Its authorization interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr (Apache-2.0); the implementation was written for Haven.
+- **Haven family:** Courier file-carry and `DeliveryReceipts` integration on escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. Steward does not call this escrow.
+- **Meter:** The rule shape ("a stored payment line with no other recipient") comes from the author's earlier project [Meter](https://github.com/datharnu/Meter); all contracts here were written fresh for QoreChain.
+- **Other libraries:** Solidity 0.8.28, Foundry (`forge-std`), viem 2.47.6, `@cosmjs/stargate` 0.39.0, `@noble/ciphers` 2.4.0, `@noble/hashes` 2.4.0, `shamir-secret-sharing` 0.0.4, Next.js 16, React 19, Tailwind CSS 4, Vitest, Playwright, tsx, TypeScript.
+
+---
+
+## AI disclosure
+
+AI coding assistants were used under human direction to write code, tests, web UI, and documentation (commits `4d66bf5`, `a55c534`, and `8fda522` on 21 November 2026 were written in Cursor with Grok 4.7; earlier commits `6343063`–`7280e84` do not record a specific model; later merge resolution and README restructuring used Antigravity).
+
+**Decisions made explicitly by the human:**
+- The single invariant: funds leave only to the two named parties, requiring a fresh ML-DSA-87 signature or an accepted timeout.
+- Keeping status-before-signature checks (`WrongStatus` on cancelling a delivered milestone) instead of reordering to chase `SignatureInvalid`.
+- Refusing to add fake functions (`withdraw`, `admin`, `setFee`) to inflate the 35/100 QCAI score.
+- Refusing an unfavorable Pool 2 swap and converting faucet fUSD via `MsgConvertCoin` instead.
+- Locking finished scene scripts against re-runs (`already ran`) and deploying/confirming `https://havenesc.vercel.app` on Vercel.
+
+---
+
+## Evidence: testnet addresses
+
+Network: `qorechain-diana` (EVM chain ID `9800`). Explorer for native transactions: `https://explore.qore.network`.
+
+| Role / Contract | Address |
+| --- | --- |
+| `EscrowFactory` | `0xf30bfc219987E60e849D5cF9e7351b7380eEc09B` |
+| Escrow A (two milestones, 1-day review) | `0xE22ff1Cd5d4B9a496C68FeD4946f2cE1dd8954Bd` |
+| Escrow B (one milestone, 120-second review) | `0xffd1a9375Ab108Ebe0E439574b5e1D7aA050121A` |
+| Escrow C (one milestone, 60-second arbiter timeout, 23 Nov 2026) | `0xB4410fcC2348212e22c10c1ed302f17225F6F49b` |
+| Practice Escrow (21 Nov 2026) | `0xb0d8Da3B7979120E6877016810D39a792a3Bdf90` |
+| Courier-Carry Escrow (21 Nov 2026) | `0x14312980702C0e2c9b85f3478ba9396e59054706` |
+| `DeliveryReceipts` | `0x06b52afc4a151b0efa260e2adcdf2d477632cb56` |
+| fUSD (ERC-20, 6 decimals, testnet token) | `0x97143B771D34ddb9130b807b135Ae675A5a963CA` |
+| Client (Scenes 1–4) | `qor1hygl6sluskpxj373uyggfev5lzuage4l69zv9q` / `0xB911fD43FC85826947d1E11084e594f8b9D466bf` |
+| Freelancer (Scenes 1–4) | `qor1f5x5jggqyg8e05rlaf5xztlwwrlsxamy9j2pxw` / `0x4D0D492100220F97d07fEa68612fee70ff037764` |
+| Arbiter 1 | `qor12kfhuvhykw7k9fyukaexldjw07d2m9zuu9un4v` / `0x55937e32E4B3Bd62a49CB7726fB64E7f9AAd945C` |
+| Arbiter 2 | `qor1qranaxl35r95mue9qyqqffvhytcvdgjg5agc9e` / `0x00fb3E9Bf1A0cb4DF325010004a59722f0c6a248` |
+| Arbiter 3 | `qor1lq0x9xwwcnsv79hat5q56ycg8hhvvyr9ymya83` / `0xf81E6299CeC4E0Cf16Fd5D014D13083DeEc61065` |
+| Spike (deployer & relayer, not a party) | `qor143f0ghn8slqguwez73087dvq8lqnuuukqdu9fl` / `0xaC52f45E6787c08E3B22f45e7f35803Fc13e7396` |
+| `SpikeTarget` (precompile spike, not an escrow) | `0xe11fe2bb1ad13ab116e0d362b218ef1b2330b1a7` |
+| PQC precompiles | `pqcVerify` `0x0000000000000000000000000000000000000a01`, `pqcKeyStatus` `0x0000000000000000000000000000000000000a02` |
+
+Arbiters are stored in strictly ascending address order: Arbiter 2, Arbiter 1, Arbiter 3. Public ML-KEM-1024 cards for the client and three arbiters are in `cards/`.
+
+---
+
+## Evidence: deploy, fund, and four scenes (20 November 2026)
+
+**Plain-sentence summary of key outcomes:**
+- On Escrow A milestone 0, the named freelancer received **1,000,000 fUSD base units** (1.000000 fUSD) after client release; Spike (a non-party relayer) then submitted the freelancer's signed delivery for milestone 1.
+- Across five classical-key attacks on Escrow A milestone 1, the client's own secp256k1 key moved **0 fUSD base units**; Escrow A's balance remained unchanged at **1,000,000 fUSD base units**.
+- On Escrow A milestone 1 dispute, one arbiter was refused (`TooFew`), and two of three arbiters split the milestone 7000 bps: **700,000 fUSD base units** to the freelancer and **300,000 fUSD base units** to the client.
+- On Escrow B (120-second review), an early `autoRelease` reverted `TooEarly`; after a real wait past the chain timestamp boundary, `autoRelease` paid **1,000,000 fUSD base units** to the freelancer with no new signature.
+
+### Deploy and fund
+
+Escrow A terms: amounts `1,000,000` and `1,000,000` base units, review `86,400` s, arbiter timeout `259,200` s, `defaultSplitBps` `5000`. Escrow B terms: one milestone of `1,000,000` base units, review `120` s, same timeout and split.
+
+| Step | Hash | Note |
+| --- | --- | --- |
+| Deploy `EscrowFactory` | `0x3a8fed59201dac842c9c05cae11d72d59d27c8da108964f5206f58b975cac309` | Unscoped window; gas used `2,624,556`; fee `295,263 uqor` (budget `354,316`, cap `5,000,000`) |
+| Create Escrow A | `0x9b7288add82823a392fc667819f33a54ff348b8e0df37bfeeef7468c642fab80` | Scoped window `[factory]` |
+| Create Escrow B | `0xf4ac289cd80be0c2ac48818b39fddb4eb1118c9ae9bbc805e9111064b99badc2` | Scoped window `[factory]`, 120 s review |
+| Convert faucet fUSD (`MsgConvertCoin`) | `9270876CBEF1759C772B7DA3E77C3D5915F6FF6178A68435D5AFFB067C59FBFF` | `2,000,000` base units to A, `1,000,000` to B; no pool swap |
+| Fund Escrow A | `0x3030d499ae0f75dd9d22d5aacb1a0dce8540f4c01b92f952a12c7bb7a942cb16` | Scoped window `[A, B]` |
+| Fund Escrow B | `0xcdc73b477528d302b38c30830c8e4a35235f174d08eb0b09c195a72481be3929` | Scoped window `[A, B]` |
+
+### Scene 1 — normal release and relayer delivery
+
+| Step | Hash | Result |
+| --- | --- | --- |
+| Deliver Escrow A milestone 0 | `0xd161906d3089aa0590d8bf031852abf611c103f8ccd6d30403e95a192971d9be` | Milestone 0 `Delivered`; ciphertext in `deployments/deliverables/` (no file key) |
+| Release Escrow A milestone 0 | `0x2ef9eac1ad5f785e5ac8f984445b8a19977a01e6482ee1032d176cd4bbf1898a` | `1,000,000` base units to named freelancer |
+| Spike submits deliver Escrow A milestone 1 | `0xfaaf878f74237747f26e6994bd45db51ac457f74b0709ca313e15c98fde4a978` | Accepted freelancer's ML-DSA-87 signature from non-party relayer |
+
+### Scene 2 — classical secp256k1 key rehearsal
+
+| Attempt | Hash | Result |
+| --- | --- | --- |
+| `release(1)` with no open EVM window | *(none — refused before broadcast)* | Node refused: no open EVM authorisation window |
+| Classical `MsgOpenEVMWindow` | *(none — refused before broadcast)* | Refused with `code 20` (`hybrid PQC signature required`) |
+| `release(1)` with junk signature (inside open window) | `0x23d8d74315ded0ce5aa1cd19c820ffecfaa164bf1bd3ca32f08b2be81699fd9b` | Reverted `SignatureInvalid`; balance unchanged at `1,000,000` |
+| `release(1)` replaying milestone-0 ML-DSA signature | `0xed3dcf05267a9ecddb4316fb615c5509e3f3e5df879f00d9e3320be389fd75d9` | Reverted `SignatureInvalid`; balance unchanged at `1,000,000` |
+| `cancel(1)` with junk signatures | `0x17fc1668ac8125d0cf5e05fee09875d4fc4578de656baba7ca3673cea86f3b8b` | Reverted `WrongStatus` (status checked before signature) |
+| Made-up `release(uint256,address)` (`eth_call` only) | *(read-only call, not broadcast)* | Reverted — no recipient argument exists |
+
+### Scene 3 — dispute and 2-of-3 arbiter split
+
+One arbiter Shamir share was refused locally before any transaction; two shares opened the same plaintext hash locally.
+
+| Step | Hash | Result |
+| --- | --- | --- |
+| Client disputes Escrow A milestone 1 | `0x7d1d63d40abce0ae8007f7277d262f146958e124a6b86ba173ad48510aa6f463` | Milestone 1 `Disputed` |
+| One arbiter calls `resolve` | `0x4c3a8a79bb9bc95b0f29a7c2401917f160200f01df994478f36fb384785f5c42` | Reverted `TooFew` |
+| Arbiter 3 submits `resolve(1, 7000)` signed by Arbiters 1 & 2 | `0xd1fd4cac9a1565ee665df65d9d5f239e98ec72ec8fc9d25df7ce8099f079a448` | Freelancer `+700,000`, client `+300,000` fUSD base units |
+
+### Scene 4 — review timeout on Escrow B
+
+| Step | Hash | Result |
+| --- | --- | --- |
+| Deliver Escrow B milestone 0 | `0x40735fcf9943cd77ff5bd24ab4541ef8f6f92b47107d0fb9e58b803825c8d37f` | Milestone 0 `Delivered` |
+| `autoRelease(0)` during 120 s review | `0xd06ae211608d06ce12fa1810d21e946ce667067794569772e4c9ab7174507d87` | Reverted `TooEarly` (real time, no warp) |
+| `autoRelease(0)` after chain timestamp passed review | `0xf542a066e48d104fabcde058661775ccb3d3c9c6b538d7b52d97f1bb991cd558` | `1,000,000` base units to freelancer; no new signature |
+
+### Scene 5 — silent-panel timeout (`resolveTimeout`) on Escrow C (23 November 2026)
+
+Escrow C (`0xB4410fcC2348212e22c10c1ed302f17225F6F49b`) held `100,000` fUSD base units with a `60`-second `arbiterTimeout` and `defaultSplitBps = 5000`. After delivery and a client-signed dispute, an early `resolveTimeout(0)` reverted `TooEarly`; after a real 60-second wait with no arbiter signatures, `resolveTimeout(0)` paid **50,000 fUSD base units** to the client and **50,000 fUSD base units** to the freelancer (Escrow C balance `0`). Full window open/close hashes are in `deployments/scene-5-resolve-timeout.json` and verified by `npm run evidence`.
+
+| Step | Hash | Gas used | Result |
+| --- | --- | ---: | --- |
+| Create Escrow C | `0x4b782365613b534be9fbd224113e02c0121b2601f1a94d93f1edede990f9e7c7` | 1,908,062 | Scoped window `[factory]` |
+| Convert `100,000` fUSD (`MsgConvertCoin`) | `AE519F943D68EC95786C58CA88548AA7CD893B42F5651C1E3547D32E9F9FAC6A` | — | Hybrid PQC (`pqc`) |
+| Fund Escrow C | `0x628dd9b9d0e8ddd7d16645a2a38a584df91445b2b82b40453291206b48cf56aa` | 80,696 | Milestone 0 `Funded` |
+| Deliver Escrow C milestone 0 (freelancer ML-DSA-87 sig) | `0x6b76bcdb7ce222b313eef4b1a062303c881ad2576d9f990e3ebb15869bb1dbd0` | 260,232 | Milestone 0 `Delivered` |
+| Dispute Escrow C milestone 0 (client ML-DSA-87 sig) | `0x028aa968481243202945b4cf3fc43022948045eb2bf38582ba6b5c18a6354d04` | 234,726 | Milestone 0 `Disputed` |
+| `resolveTimeout(0)` before 60 s `arbiterTimeout` | `0x7ab861cca1f79f2991f843eb93242383580933f9a7e7957662ec5b696d91407a` | — | Reverted `TooEarly` (real time, no warp) |
+| `resolveTimeout(0)` after chain timestamp passed timeout | `0xfab97156407bc608077a8c2187f5159a094084e105834b91bdb9188ec34c78e6` | 100,445 | Client `+50,000`, freelancer `+50,000` fUSD base units (`Resolved`) |
+
+---
+
+## Evidence: practice escrow and Courier carry (21 November 2026)
+
+### Practice escrow (`0xb0d8Da3B7979120E6877016810D39a792a3Bdf90`)
+
+Client `0x396D67CF527224aA27b7eb7A9e0173E725eeD036`, Freelancer `0x8c7b839B916554803b3356cE05233B36b73aC3FF`. Milestone 0 ended in status `2` (`Delivered`) holding `100,000` fUSD base units; commitment `0x4eae5484b465291504c20fc1f5c1dc524d9d9c695b557d764f52771992cf5955`. The classical open produced no hash. Courier did not carry this file.
+
+| Step | Hash | Gas used | Result |
+| --- | --- | ---: | --- |
+| Create escrow | `0xbc084c344f1906b207ff5190a86e439ec97909ec8b2a6501f040a625e577a429` | 1,908,074 | Success (`0x1`) |
+| Fund milestone 0 | `0xb403bcc39cff9d259d2340978a780e009e6b3476ef2cc448be17c314228f5eed` | 80,696 | Success (`0x1`) |
+| Record receipt (`DeliveryReceipts`) | `0x261bd4952e68c0dbbedaf01ce2ef15b450303ccad54762d284422b986e8f8cc1` | 271,474 | Success (`0x1`) |
+| Deliver commitment | `0x32d5407658ef3c5f730ceb18e246339d302b8a4484ca62700d7b0eb75bc19653` | 260,016 | Success (`0x1`) |
+| Zero-signature release | `0x4d3bb19b12cee0f3c4deb1f000835901e7e53fc4ba72265805b81d1e3cec24da` | 750,000 | Reverted (`0x0`) |
+
+### Courier carry and release (`0x14312980702C0e2c9b85f3478ba9396e59054706`)
+
+Recorded `2026-11-21T20:56:17Z`. Courier sealed one file in the browser; the client opened it and signed the receipt; `DeliveryReceipts` recorded ciphertext hash `0x7d0cf82a1ba8b2bddbf7b4c2f2cd356c877771494be8ac2181c1cd758fb05b74` (conversation `0x1bd78eaa07a0eb76689a6d8b968f85683bac73ec3e331d1e73cc39e1698e43c1`, counter `0`, `recordedAt` `1795294577`); the freelancer delivered matching commitment `0x007b3887729d4f5609def6085641381946c8d1bb5d6719e3a1c5dbd2aec05689`; the client released **100,000 fUSD base units** to the stored freelancer `0x8c7b839B916554803b3356cE05233B36b73aC3FF` (status `3`, `Released`).
+
+| Step | Hash | PQ status tier |
+| --- | --- | --- |
+| Create escrow | `0xa657aa638fcb31cfa54cadf19d59da5619241cccd7a20fc4fee762c697a8aa16` | `classical` |
+| Convert `100,000` fUSD base units | `0F36FECEFFA1637D4559F6C26F04F89B7543221DC922912D6FA810FB30BB9D52` | `pqc` |
+| Fund escrow | `0x1bf8055d76fa8e1058a359ab8b7118e2128ae95f8fcb37e4405348a1804a3799` | `classical` |
+| Record receipt (`DeliveryReceipts`) | `0x95a37e72f573830a73e491de42d0f7da7ad33713c80ed35d8626103c90391452` | `classical` |
+| Deliver commitment | `0xe98f67c12f88e65c389ac66064a83696ed6cbe0d73da28bea3c7b25779dd4895` | `classical` |
+| Release `100,000` fUSD to stored freelancer | `0x602ed45cda12d5c36e89e4f559e6e3ef754e2d50015a3e4eee68ab81c57e22d8` | `classical` |
+
+---
+
+## Evidence: precompile spike results
+
+Ran on 20 November 2026 against `SpikeTarget` (`0xe11fe2bb1ad13ab116e0d362b218ef1b2330b1a7`, not an escrow) at effective gas price `112,500,000,000 wei`.
+
+| Spike | Hash | Gas used | Fee (uqor) | Outcome |
+| --- | --- | ---: | ---: | --- |
+| S1 Deploy `SpikeTarget` | `0xac057fd48140b66e250f248bb0e4035820d8679e1629bdfd42f964cd333ee358` | 448,701 | 50,479 | Constructor verified `pqcKeyStatus` |
+| S2 Relayed ML-DSA ping | `0x836195008261eacffef0b0ffc91dcb44271588178bb790ea649f65b28b60f8cd` | 242,549 | 27,287 | Freelancer submitted client's ML-DSA ping; count became 1 |
+| S2 Replay of same ping | `0xd5634f54f8673f85fc30db6be66571e283c8e0c247ffaf3d293cfb87551830ac` | 750,000 | 84,375 | Reverted `SignatureInvalid` |
+| S3 Contract creation inside scoped window | `0xa0021315f5db9a2fd875749e20412914563fbadc681ab3da3deada90716dc2e0` | 64,923 | 7,304 | Succeeded; validated `EscrowFactory.create` in `[factory]` window |
+| S4 Classical key alone (no window / classical open) | *(none — refused before broadcast)* | — | — | Refused: no open window, then `code 20` (`hybrid PQC signature required`) |
+
+---
+
+## Evidence: two-stage QCAI audit findings
+
+Both reports ran on the same `src/HavenEscrow.sol` using the Ethereum (EVM/Solidity) setting (`Quantum readiness: Not scored`, expected per FAQ). Every finding in both stages named functions not present in `src/`, so no source edits were made between stages and the score remained `35/100`.
+
+| Stage | PDF | Generated | Score | PDF risk level | Findings |
+| --- | --- | --- | --- | --- | ---: |
+| 1 | `docs/audit/stage-1-2026-11-21.pdf` | 21 November 2026, 09:04 | 35/100 | CRITICAL | 6 |
+| 2 | `docs/audit/stage-2-2026-11-21.pdf` | 21 November 2026, 09:22 | 35/100 | HIGH | 6 |
+
+### Stage 1 findings (all 6 false positives)
+
+| Finding | Severity | Auditor location | Verification against `src/HavenEscrow.sol` |
+| --- | --- | --- | --- |
+| Reentrancy in `withdraw` | CRITICAL | `withdraw` | No `withdraw` exists. Only `_pay` makes an external call; `paidToClient`/`paidToFreelancer` updates first, and every state-changing function has the `lock` modifier (`Reentrancy`). |
+| Missing access control on admin functions | HIGH | admin functions | No admin, owner, or upgrade role exists. Permissionless calls (`fund`, `autoRelease`, `refund`, `resolveTimeout`, `sweep`) cannot choose a recipient; signed actions verify ML-DSA-87 via `PqAuth`/`PqQuorum`. |
+| Integer overflow in balance calculations | HIGH | balance update functions | Solidity `0.8.28` checked arithmetic reverts on overflow; `held` sums at most 8 milestones. |
+| Unchecked external call return values | MEDIUM | transfer functions | `_pay` is the only external call; it reverts `TransferFailed` on failure or non-`true` return data. |
+| Front-running in the withdrawal process | MEDIUM | `withdraw` | No withdrawal function exists; payouts require a bound ML-DSA-87 signature or a fixed creation-time timeout split. |
+| Unbounded loop in batch operations | LOW | batch processing functions | No batch function exists; constructor caps milestones at `MAX_MILESTONES = 8`. |
+
+### Stage 2 findings (all 6 false positives)
+
+| Finding | Severity | Auditor location | Verification against `src/HavenEscrow.sol` |
+| --- | --- | --- | --- |
+| Reentrancy in `withdraw` | CRITICAL | `withdraw` | Same as Stage 1: no `withdraw`; `_pay` runs under `lock` after accounting updates. |
+| Missing access control on `setFee` | HIGH | `setFee` | No fee and no setter exist; all terms are immutable from the constructor. |
+| Integer overflow in `calculateFee` | HIGH | `calculateFee` | No fee calculation exists; `_settle` computes `amount * splitBps / 10000` with `splitBps <= 10000` under Solidity `0.8.28`. |
+| Unchecked ETH transfer return value | MEDIUM | `withdraw` | No ETH is transferred (ERC-20 only); `_pay` checks token return data and reverts `TransferFailed`. |
+| Front-running in `deposit` | MEDIUM | `deposit` | No `deposit` function exists; `fund()` marks milestones covered by token balance in order and cannot choose a payee. |
+| Unbounded loop in `getBalances` | LOW | `getBalances` | No `getBalances` function exists; `held` loops over at most 8 milestones. |
+
+---
+
+## Evidence: Foundry tests, fuzzing, and invariants
+
+Recorded in `.gas-snapshot` (Solidity `0.8.28`, optimizer 200 runs, `via_ir`): **61 Foundry tests total**, **0 failures**.
+
+- **51 unit, factory, and vector tests:** covers creation validation (zero address, same party, party-as-arbiter, >8 milestones, unsorted arbiters, unregistered client/freelancer/arbiter), delivery, release, replay/wrong-escrow/wrong-milestone/expired-deadline refusals, cancellation, refund, sweep, 70/30 resolve, `resolveTimeout`, boundary-second timing, 5 stolen-classical-key tests (client, freelancer, and all 3 arbiters), and byte-for-byte TypeScript vector parity (`VectorsTest`).
+- **3 fuzz tests (256 runs each):** `testFuzz_amounts`, `testFuzz_resolveSplit`, `testFuzz_timing`.
+- **6 invariant tests (64 runs, depth 40, 2,560 calls each, 0 reverts):** `invariant_conservation`, `invariant_fundsOnlyReachParties`, `invariant_heldCovered`, `invariant_noDoublePayment`, `invariant_releaseNeedsPqOrTimeout`, `invariant_terminalIsFinal`.
+- **Web unit tests (`apps/web`):** 39 tests across 9 Vitest files (vectors, recorded RPC replay, Courier carry, No Third Name ABI/transfer checks, practice steps, revert decoding).
+
+---
+
+## Evidence: design decisions and cost breakdown
+
+### Design decisions
+
+| Decision | Why | Date |
+| --- | --- | --- |
+| 5000 bps `defaultSplitBps` if arbiters stay silent | A full refund or full payout would reward whichever party benefits from a silent panel; rounding remainder goes to the client | 20 Nov 2026 |
+| Check milestone status before signature | A `Delivered` milestone cannot be cancelled; leaving `WrongStatus` in place is honest rather than reordering checks to force `SignatureInvalid` | 20 Nov 2026 |
+| Deploy with `new`, no clone factory | `HavenEscrow` is `7,876` bytes and `EscrowFactory` is `11,922` bytes (both well under the `24,576` EIP-170 limit) | Measured at build |
+| Zero-authority relayer | Spike deploys, funds accounts, and submits deliveries without being a party or arbiter | 20 Nov 2026 |
+| No Pool 2 swap under 6 QOR | Pool 2 quoted `178,034` fUSD base units vs. `3,100,000` needed; faucet `MsgConvertCoin` was used instead | 20 Nov 2026 |
+| 120 s demo review vs. 1-day product review | Short review on Escrow B lets judges observe real-time `TooEarly` → `autoRelease`; production escrows should use ~14 days | 20 Nov 2026 |
+
+### Cost breakdown (measured on `qorechain-diana`)
+
+Every EVM action on QoreChain requires opening and closing a hybrid-signed EVM window on the Cosmos lane plus EVM execution gas. Haven Escrow charges **0 protocol fee** (`drawFee` / `escrowFee` does not exist).
+
+| Cost item | Measured value | Who pays |
+| --- | ---: | --- |
+| Native Cosmos tx fee (open window, close window, register, convert) | `180,000 uqor` (gas limit `1,200,000`) | Signing account |
+| `EscrowFactory` deploy (one-time) | `2,624,556` gas · `295,263 uqor` (budget cap `5,000,000 uqor`) | Deployer |
+| `EscrowFactory.create` (per escrow) | `1,908,074` gas · ~`214,659 uqor` + `360,000 uqor` open/close (cap `3,300,000 uqor`) | Client |
+| `fund` (per funding call) | `80,696` gas · ~`9,079 uqor` + `360,000 uqor` open/close (cap `1,320,000 uqor`) | Client or any caller |
+| `deliver` (per milestone) | `260,016` gas · ~`29,252 uqor` + `360,000 uqor` open/close | Freelancer or relayer |
+| `release` (per milestone) | ~`290,557` gas · ~`32,688 uqor` + `360,000 uqor` open/close | Client or relayer |
+| `DeliveryReceipts.record` (optional Courier carry) | `271,474` gas · ~`30,541 uqor` + `360,000 uqor` open/close | Client |
+| Window caps in scripts | Deploy `5,000,000 uqor` · Call `2,000,000 uqor` · Resolve `3,000,000 uqor` | Guardrail cap, not spent |
+
+Gas price measured on 20–21 November 2026: `112,500,000,000 wei`.

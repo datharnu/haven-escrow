@@ -1,0 +1,110 @@
+{
+  "network": "qorechain-diana",
+  "ok": true,
+  "amount": "100000",
+  "arbiterTimeout": "60",
+  "defaultSplitBps": 5000,
+  "transactions": [
+    {
+      "hash": "8EA72D868021A013FF9EB1245B79759C38D490A27602863DF931C09D9C44D81F",
+      "tier": "pqc",
+      "note": "client opens scoped window [factory] for create escrow C"
+    },
+    {
+      "hash": "0x4b782365613b534be9fbd224113e02c0121b2601f1a94d93f1edede990f9e7c7",
+      "tier": "classical",
+      "note": "create escrow C (0xB4410fcC2348212e22c10c1ed302f17225F6F49b) gasUsed 1908062 fee 214657 uqor"
+    },
+    {
+      "hash": "7918464EEE4DFA1D35ED9D256BF782B2EEB7DC0C506D9A56B84539FC625BA7D0",
+      "tier": "pqc",
+      "note": "client closes create escrow C window"
+    },
+    {
+      "hash": "AE519F943D68EC95786C58CA88548AA7CD893B42F5651C1E3547D32E9F9FAC6A",
+      "tier": "pqc",
+      "note": "MsgConvertCoin 100000 fUSD base units to escrow C"
+    },
+    {
+      "hash": "0CEF6F465DC89F3C8B2F2FBEF0BC3966AC3716C89CD20E8DE63FC8E0C337BED9",
+      "tier": "pqc",
+      "note": "client opens scoped window [C] for fund()"
+    },
+    {
+      "hash": "0x628dd9b9d0e8ddd7d16645a2a38a584df91445b2b82b40453291206b48cf56aa",
+      "tier": "classical",
+      "note": "fund C gasUsed 80696 fee 9079 uqor"
+    },
+    {
+      "hash": "582EAD95C35505548EA2A5DC516531855E0BEA8943B005B568EFA4C7BFA5EB2D",
+      "tier": "pqc",
+      "note": "client closes fund C window"
+    },
+    {
+      "hash": "994A4535F326DE15064369A781290C24DC3270E6C8C2A703A3267E64A5CF4749",
+      "tier": "pqc",
+      "note": "client opens scoped window [C] to relay deliver m0"
+    },
+    {
+      "hash": "0x6b76bcdb7ce222b313eef4b1a062303c881ad2576d9f990e3ebb15869bb1dbd0",
+      "tier": "classical",
+      "note": "deliver C m0 (freelancer sig) gasUsed 260232 fee 29277 uqor"
+    },
+    {
+      "hash": "C8DDFA5198D3BF97A63241C3114BEA527B9718932101CC73E0C2DC5AF13ABE6D",
+      "tier": "pqc",
+      "note": "client closes deliver C window"
+    },
+    {
+      "hash": "912B2BF4A59F60780095C3175AEB24DEDB630BA5E3DD0B5524216865ED8C8252",
+      "tier": "pqc",
+      "note": "client opens scoped window [C] for client dispute m0"
+    },
+    {
+      "hash": "0x028aa968481243202945b4cf3fc43022948045eb2bf38582ba6b5c18a6354d04",
+      "tier": "classical",
+      "note": "dispute C m0 gasUsed 234726 fee 26407 uqor"
+    },
+    {
+      "hash": "8750BDD8E0AB8297884D0C6DD003229B8C65309B2ED48AAD2AAAAD7B51ECF5B0",
+      "tier": "pqc",
+      "note": "client closes dispute C window"
+    },
+    {
+      "hash": "7B68D073F35855CDA887B9F5B2B58011A4E67104778CBCDAD860EF6690C14F94",
+      "tier": "pqc",
+      "note": "client opens scoped window [C] for early resolveTimeout"
+    },
+    {
+      "hash": "0x7ab861cca1f79f2991f843eb93242383580933f9a7e7957662ec5b696d91407a",
+      "tier": "refused",
+      "note": "resolveTimeout before arbiterTimeout -> TooEarly"
+    },
+    {
+      "hash": "B379C2660F6CA6F6917820757A541DB0057D58F4619C791B5BD2FC4FD0740CEB",
+      "tier": "pqc",
+      "note": "client closes early resolveTimeout window"
+    },
+    {
+      "hash": "FA60AEF10F34058D7AE9F6F68F5631E6FB27D397C7168E77F81AE8C035A31A7D",
+      "tier": "pqc",
+      "note": "client opens scoped window [C] after arbiterTimeout"
+    },
+    {
+      "hash": "0xfab97156407bc608077a8c2187f5159a094084e105834b91bdb9188ec34c78e6",
+      "tier": "classical",
+      "note": "resolveTimeout C m0 (5000 bps) gasUsed 100445 fee 11301 uqor"
+    },
+    {
+      "hash": "B21FE177E6E3DCC5E3960AFEA5B4DE78880DED0B46F45DEEEA5A07E6ACD1F4AB",
+      "tier": "pqc",
+      "note": "client closes resolveTimeout window"
+    }
+  ],
+  "escrowC": "0xB4410fcC2348212e22c10c1ed302f17225F6F49b",
+  "clientBefore": "300000",
+  "freelancerBefore": "2700000",
+  "clientDelta": "50000",
+  "freelancerDelta": "50000",
+  "ranAt": "2026-11-23T07:01:55.779Z"
+}

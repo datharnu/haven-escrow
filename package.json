@@ -21,6 +21,7 @@
     "rehearse": "tsx scripts/rehearse.ts",
     "scene:3": "tsx scripts/scene-3-dispute.ts",
     "scene:4": "tsx scripts/scene-4-timeout.ts",
+    "scene:5": "tsx scripts/scene-5-resolve-timeout.ts",
     "gas": "forge snapshot",
     "web": "npm --prefix apps/web run dev -- -p 3020"
   },
