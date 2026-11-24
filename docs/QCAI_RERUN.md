@@ -11,7 +11,20 @@ What the repo documents about the tool (`docs/qcai.md`, from the Builder FAQ and
 - The FAQ says a QoreChain EVM setting that knows the PQC precompiles is *planned*. The repo does not record whether it exists yet: check the dashboard's setting list.
 - Use the same setting for runs you want to compare. Both committed stages used "Ethereum (EVM/Solidity)".
 
-## Checklist
+## HavenEscrowV2 Stage 2 (25 November 2026)
+
+V2 Stage 1 is `docs/audit/v2-stage-1-2026-11-24.pdf` (35/100, 6 findings, triaged in `docs/AUDIT.md`). Stage 2 uses the same setting, "Ethereum (EVM/Solidity)", and the same seven files in the same order:
+
+```bash
+for f in src/HavenEscrowV2.sol src/EscrowFactoryV2.sol src/IDeliveryReceipts.sol src/EscrowArgs.sol \
+         lib/haven-pq-kit/src/PqAuth.sol lib/haven-pq-kit/src/PqQuorum.sol lib/haven-pq-kit/src/IQorePQC.sol; do
+  printf '\n// ===== %s =====\n' "$f"; cat "$f"
+done | pbcopy
+```
+
+Before pasting: `npm run audit:check` prints `6 of 6 V2 finding checks passed`, and `forge test --match-contract HostileTokenTest` passes. Save the PDF as `docs/audit/v2-stage-2-2026-11-25.pdf`, then fill the "V2 stage 2" rows in `docs/AUDIT.md` and the README audit table, the README "Audit score in context" line and rubric row, `docs/PROJECT_PAGE.md`, and the QCAI answer in `apps/web/components/questions.tsx`. If Stage 2 names new functions, add them to `FINDINGS_V2` in `scripts/lib/audit-names.ts` only when they name something that must not exist.
+
+## Checklist (HavenEscrow rerun)
 
 1. **Confirm the source is current.** From the repo root: `git status` shows no changes under `src/` or `lib/haven-pq-kit/src/`, and `npm run audit:check` prints `12 of 12 finding checks passed`.
 2. **Build the paste.** The escrow imports its PQC checks from the vendored kit, so paste the escrow with the code it calls, in this order:

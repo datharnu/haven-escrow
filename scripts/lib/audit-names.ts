@@ -181,3 +181,76 @@ export function checkFindings(sources: Source[], abiNames: string[], escrowFiles
     };
   });
 }
+
+/**
+ * The 6 findings in docs/audit/v2-stage-1-2026-11-24.pdf (HavenEscrowV2 paste, "Ethereum (EVM/Solidity)"),
+ * with the location each one cites, copied from the PDF.
+ */
+export type FindingV2 = { severity: string; title: string; location: string; name: string };
+
+export const FINDINGS_V2: FindingV2[] = [
+  { severity: "CRITICAL", title: "Reentrancy", location: "HavenEscrowV2.sol:withdraw()", name: "withdraw" },
+  { severity: "CRITICAL", title: "Missing access control", location: "HavenEscrowV2.sol:setFee()", name: "setFee" },
+  { severity: "HIGH", title: "Integer overflow", location: "HavenEscrowV2.sol:calculateFee()", name: "calculateFee" },
+  { severity: "HIGH", title: "Unchecked external call return values", location: "HavenEscrowV2.sol:transfer()", name: "transfer" },
+  { severity: "MEDIUM", title: "Front-running", location: "HavenEscrowV2.sol:deposit()", name: "deposit" },
+  { severity: "MEDIUM", title: "Unbounded loop", location: "HavenEscrowV2.sol:getBalances()", name: "getBalances" },
+];
+
+/** The files pasted into the V2 audit, in the order docs/QCAI_RERUN.md builds the paste. */
+export const V2_PASTE = [
+  "src/HavenEscrowV2.sol",
+  "src/EscrowFactoryV2.sol",
+  "src/IDeliveryReceipts.sol",
+  "src/EscrowArgs.sol",
+  "lib/haven-pq-kit/src/PqAuth.sol",
+  "lib/haven-pq-kit/src/PqQuorum.sol",
+  "lib/haven-pq-kit/src/IQorePQC.sol",
+];
+export const V2_ABI_FILE = "apps/web/lib/abi/haven-escrow-v2.json";
+
+export type ResultV2 = { finding: FindingV2; ok: boolean; detail: string };
+
+/**
+ * Five findings name a function that must not exist in the V2 paste or its ABI, as any identifier, in any case.
+ * `transfer()` is different: the escrow does call the token's `transfer`, inside `_pay`. That finding passes when
+ * no function named `transfer` is declared in the paste, `_pay` in HavenEscrowV2.sol is its only low-level call,
+ * the call encodes `IERC20.transfer.selector`, and the return value is checked with `revert TransferFailed()`.
+ */
+export function checkFindingsV2(paste: Source[], abiNames: string[]): ResultV2[] {
+  return FINDINGS_V2.map((finding) => {
+    if (finding.name === "transfer") {
+      const declared = hits(paste, /\bfunction\s+transfer\s*\(/i);
+      const escrow = paste.filter((s) => s.path.endsWith("HavenEscrowV2.sol"));
+      const calls = hits(escrow, /\.(call|delegatecall|staticcall|transfer|send)\s*[({]/);
+      const encodes = escrow.some(({ text }) => /abi\.encodeWithSelector\(IERC20\.transfer\.selector,/.test(text));
+      const checked = escrow.some(({ text }) =>
+        /if \(!ok \|\| \(ret\.length != 0 && !abi\.decode\(ret, \(bool\)\)\)\) revert TransferFailed\(\);/.test(text),
+      );
+      const inAbi = abiNames.some((n) => /^transfer$/i.test(n));
+      const ok = escrow.length === 1 && declared.length === 0 && !inAbi && calls.length === 1 && encodes && checked;
+      return {
+        finding,
+        ok,
+        detail: ok
+          ? `no transfer() declared; the token transfer is the one low-level call (${calls[0]}, in _pay) and its return value is checked (TransferFailed)`
+          : `declared ${declared.join(",") || "none"}; ABI ${inAbi}; low-level calls ${calls.join(",") || "none"}; encodes ${encodes}; checked ${checked}`,
+      };
+    }
+    const pattern = new RegExp(`\\b${finding.name}\\b`, "i");
+    const found = hits(paste, pattern);
+    const inAbi = abiNames.some((n) => pattern.test(n));
+    const ok = found.length === 0 && !inAbi;
+    return {
+      finding,
+      ok,
+      detail: ok
+        ? `"${finding.name}" appears nowhere in the ${paste.length} pasted files or the V2 ABI`
+        : `"${finding.name}" found at ${[...found, ...(inAbi ? ["ABI"] : [])].join(", ")}`,
+    };
+  });
+}
+
+export function loadPaste(paths: string[] = V2_PASTE): Source[] {
+  return paths.map((path) => ({ path, text: readFileSync(path, "utf8") }));
+}

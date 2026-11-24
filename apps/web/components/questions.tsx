@@ -57,6 +57,8 @@ const ITEMS: { q: string; a: ReactNode }[] = [
         transfer, batch functions) whose issue the code does not have. Each is mapped in{" "}
         <span className="num text-[13px] text-ink">docs/AUDIT.md</span>, and{" "}
         <span className="num text-[13px] text-ink">npm run audit:check</span> re-checks all 12 against the source.
+        The Stage 1 run on <span className="num text-[13px] text-ink">HavenEscrowV2</span> (24 November 2026) also
+        scored 35/100 with 6 findings citing functions not in the paste; its Stage 2 runs on 25 November 2026.
       </>
     ),
   },

@@ -56,4 +56,4 @@ The explorer root `https://explore.qore.network` is the one the README documents
 
 ## How it's made (audit line)
 
-Two-stage QCAI audit (Ethereum EVM/Solidity setting) in `docs/audit/`, mapped in `docs/AUDIT.md`: both score 35/100, and all 12 findings are false positives (8 name functions that don't exist in `src/`, e.g. `withdraw`, `setFee`); `npm run audit:check` re-checks all 12 against the source.
+QCAI audit (Ethereum EVM/Solidity setting) in `docs/audit/`, mapped in `docs/AUDIT.md`. `HavenEscrow`: both stages score 35/100, and all 12 findings are false positives (8 name functions that don't exist in `src/`, e.g. `withdraw`, `setFee`). `HavenEscrowV2`: Stage 1 (24 November 2026) scores 35/100 with 6 findings citing functions not in the paste; five are false positives and `transfer()` is answered by `_pay`'s return check plus regression tests; Stage 2 runs on 25 November 2026. `npm run audit:check` re-checks all 18 against the source.
