@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
-const scriptSrc = ["'self'", "'unsafe-inline'", process.env.NODE_ENV === "development" ? "'unsafe-eval'" : ""]
+// 'wasm-unsafe-eval' lets the page compile WebAssembly and nothing else (no eval or new Function). The
+// practice desk needs it: @qorechain/wallet-adapter pulls in @cosmjs/crypto 0.32, whose libsodium-sumo
+// (Argon2) is an Emscripten WebAssembly module that /practice instantiates on load. @qorechain/pqc 0.2.3
+// itself verifies in JavaScript.
+const scriptSrc = ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", process.env.NODE_ENV === "development" ? "'unsafe-eval'" : ""]
   .filter(Boolean)
   .join(" ");
 
@@ -10,7 +14,6 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data:",
-  // @qorechain/pqc 0.2.3 verifies in JavaScript. It does not load WebAssembly, so this does not add wasm-unsafe-eval.
   "connect-src 'self' https://evm-testnet.qore.host",
   "frame-ancestors 'none'",
   "base-uri 'self'",

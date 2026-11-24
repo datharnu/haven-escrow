@@ -29,7 +29,7 @@ Tunde, a developer in Lagos, takes a two-milestone job worth 2,000 fUSD from May
 - **Review timeout:** a client who goes silent after delivery cannot hold the money; after the agreed period anyone can call `autoRelease` to pay the freelancer, with no new signature.
 - **The client can't pretend they never got the work (`HavenEscrowV2`).** Their own ML-DSA-87 receipt on chain turns a stalling dispute into a full payout to the freelancer if the arbiters stay silent. Anyone can record on the escrow a receipt from Courier's `DeliveryReceipts` that the client's key signed over the milestone commitment (`DeliveryReceipts` checked it with `pqcVerify` when it stored it); `resolveTimeout` then pays `receivedSplitBps` (10000 bps in the demo) instead of the 5000 bps default. A receipt from any other key, over any other hash, or for another escrow or milestone is refused. Recorded on testnet on Escrow D on 23 November 2026.
 - **Encrypted deliverable:** the file key is sealed to the client with ML-KEM-1024 and Shamir-split 2-of-3 across the arbiters; only a hash is on chain. A Courier delivery-receipt flow was run end to end on testnet.
-- **Checked, not just signed:** both QCAI audit stages committed for `HavenEscrow` and Stage 1 for `HavenEscrowV2`, 111 Foundry tests including fuzz and invariants (64 for `HavenEscrow`, 47 for `HavenEscrowV2`), and every testnet hash re-checkable with `npm run evidence`.
+- **Checked, not just signed:** both QCAI audit stages committed for `HavenEscrow` and Stage 1 for `HavenEscrowV2`, 111 Foundry tests including fuzz and invariants (64 for `HavenEscrow`, 47 for `HavenEscrowV2`; `forge test` prints 100 because it counts each invariant suite (6 invariants for `HavenEscrow`, 7 for `HavenEscrowV2`) as one test), and every testnet hash re-checkable with `npm run evidence`.
 
 **Audit score in context:** both QCAI reports on `HavenEscrow` score 35/100, and all 12 findings are false positives: 8 name functions that don't exist in `src/` (`withdraw`, `setFee`, `calculateFee`, `deposit`, `getBalances`), and 4 name categories (admin, balance-update, transfer, batch functions) whose issue the code does not have. `HavenEscrowV2` Stage 1 (24 November 2026) also scores 35/100 with 6 findings that cite functions not in the paste; five are false positives, and the `transfer()` one is answered by `_pay`'s return check and named regression tests. V2 Stage 2 runs on 25 November 2026. Each finding is mapped in [`docs/AUDIT.md`](docs/AUDIT.md); `npm run audit:check` re-checks all 18 against the source.
 
@@ -155,14 +155,14 @@ Everything below runs on QoreChain Diana (`qorechain-diana`, EVM chain ID `9800`
    npm ci
    npm run evidence
    ```
-   `npm run evidence` reads `deployments/*.json` and re-checks every recorded hash on `qorechain-diana` via `@qorechain/mcp`. On 23 November 2026, after Scene 6, it printed **134 passed, 0 failed** (98 passed before Scene 6; 68 passed after the four scenes on 20 November 2026; 79 passed after the Courier carry on 21 November 2026).
+   `npm run evidence` reads `deployments/*.json` and re-checks every recorded hash on `qorechain-diana` via `@qorechain/mcp`. On 23 November 2026, after Scene 6, it printed **134 passed, 0 failed** (98 passed before Scene 6; 68 passed after the four scenes on 20 November 2026; 79 passed after the Courier carry on 21 November 2026). It takes about 3–4 minutes: it reads every hash from the testnet one by one.
 4. **Offline contract, TypeScript, and CBOM tests (no chain, no keys).**
    ```bash
    forge test
    npm run test:ts
    npm run cbom:check
    ```
-   `npm run cbom:check` verifies no contract uses `ecrecover` or bypasses the two PQC precompiles, and proves it still catches `ecrecover` against `scripts/fixtures/ecrecover/`.
+   `forge test` runs 111 Foundry tests, 0 failures; its summary line reads `100 tests passed` because it counts each invariant suite (6 invariants for `HavenEscrow`, 7 for `HavenEscrowV2`) as one test, and lists each invariant as `[PASS]` above it. `npm run test:ts` runs 23 TypeScript tests. `npm run cbom:check` verifies no contract uses `ecrecover` or bypasses the two PQC precompiles, and proves it still catches `ecrecover` against `scripts/fixtures/ecrecover/`.
 
 ---
 
@@ -192,11 +192,32 @@ Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bount
 | **Scoped EVM window** | Create, fund, deliver, release, dispute, resolve, and the classical-key rehearsal each ran inside a scoped EVM window aimed at one contract (or `[A, B]` for funding). `EscrowFactory.create` runs inside a window scoped to `[factory]`. | Deploying `EscrowFactory` itself used an unscoped window because a scoped window cannot create a contract from an EOA. The account's ML-DSA-87 key opens windows; the contract does not. |
 | **`pqcVerify`** | `deliver`, `release`, `dispute`, and `cancel` call `PqAuth.authorize`; `resolve` calls `PqQuorum` — both call `pqcVerify` (`0x…0a01`). Constructor calls `pqcKeyStatus` (`0x…0a02`) for all five parties. | The precompile calls live in vendored `haven-pq-kit` v0.1.0 rather than inlined in `HavenEscrow.sol`. `EscrowFactory` runtime code embeds the escrow initcode containing both addresses. |
 | **Two-stage QCAI audit** | `HavenEscrow`: both PDFs are committed at `docs/audit/stage-1-2026-11-21.pdf` and `docs/audit/stage-2-2026-11-21.pdf`, with all 12 findings mapped below and in `docs/AUDIT.md`. `HavenEscrowV2`: Stage 1 at `docs/audit/v2-stage-1-2026-11-24.pdf`, its 6 findings mapped in `docs/AUDIT.md`. | All three PDFs score 35/100 on the Ethereum (EVM/Solidity) setting. The 12 `HavenEscrow` findings are false positives (8 name functions not in `src/`, 4 name categories). The 6 V2 findings cite `withdraw`, `setFee`, `calculateFee`, `transfer`, `deposit`, `getBalances`, none of which is a function in the paste; `transfer()` is answered by `_pay`'s return check and regression tests. **V2 Stage 2 is not run yet; it runs on 25 November 2026.** `npm run audit:check` re-checks all 18. Quantum readiness is `"Not scored"` on this setting (expected per FAQ). |
-| **Foundry or Hardhat tests** | `forge test` runs 111 Foundry tests across unit, fuzz (256 runs), invariant (64 runs, 2,560 calls), factory, hostile-token, and byte-vector suites (47 of them for `HavenEscrowV2`, run against a copy of Courier's `DeliveryReceipts`); `npm run test:ts` adds 23 TypeScript tests and `apps/web` Vitest adds 42 web unit tests. | Foundry has no QoreChain precompiles, so tests use 4,627-byte keccak mock signatures. Live ML-DSA-87 signatures are proven on Diana testnet and re-checked by `npm run evidence` and `/record`. |
+| **Foundry or Hardhat tests** | `forge test` runs 111 Foundry tests (it prints 100: each invariant suite, 6 + 7 invariants, counts as one test) across unit, fuzz (256 runs), invariant (64 runs, 2,560 calls), factory, hostile-token, and byte-vector suites (47 of them for `HavenEscrowV2`, run against a copy of Courier's `DeliveryReceipts`); `npm run test:ts` adds 23 TypeScript tests and `apps/web` Vitest adds 42 web unit tests. | Foundry has no QoreChain precompiles, so tests use 4,627-byte keccak mock signatures. Live ML-DSA-87 signatures are proven on Diana testnet and re-checked by `npm run evidence` and `/record`. |
 | **Public GitHub repository under MIT or Apache-2.0** | `https://github.com/datharnu/haven-escrow`, Apache-2.0 (`LICENSE`). | Explorer source verification is not available on Diana explorer; compiler settings are in `foundry.toml`. |
 | **README and testnet addresses** | This single-file `README.md` contains all addresses, hashes, audit findings, and limits. | Testnet only (`qorechain-diana`, chain ID 9800); fUSD has no monetary value. |
 | **Video of up to 3 minutes** | Shot list is ready in `docs/DEMO.md`; featured image is `docs/featured.png`. | [Demo video](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view) (2:12). Motion-graphics explainer built from the recorded evidence, with synthetic narration (ElevenLabs); not a screen recording of a live session. |
 | **Built during the event & open-source credits** | First commit `6343063` on 20 November 2026; all kits and libraries credited below. | Shares the two-name immutable-line design shape from the author's earlier project Meter; all contracts here were written fresh for QoreChain. |
+
+
+### Where the PQC checks are (for jurors)
+
+The two Solidity PQC items (`pqcVerify`, `pqcKeyStatus`) are checked by hand, so here is every call site.
+
+| Contract | What the ML-DSA-87 check protects | Call site |
+| --- | --- | --- |
+| `HavenEscrow` (V1) | Key status of all five parties at creation | [`src/HavenEscrow.sol` L136–138](src/HavenEscrow.sol#L136-L138) → `PqAuth.init` / `PqQuorum.init` |
+| `HavenEscrow` (V1) | `deliver`, `release`, `dispute`, `cancel` need the named party's fresh signature | [L163](src/HavenEscrow.sol#L163), [L174](src/HavenEscrow.sol#L174), [L207](src/HavenEscrow.sol#L207), [L241–242](src/HavenEscrow.sol#L241-L242) → `PqAuth.authorize` |
+| `HavenEscrow` (V1) | `resolve` needs 2 of 3 arbiters | [L223](src/HavenEscrow.sol#L223) → `PqQuorum.authorizeQuorum` |
+| `HavenEscrowV2` | Same checks at creation and on every sensitive action | [`src/HavenEscrowV2.sol` L157–159](src/HavenEscrowV2.sol#L157-L159), [L184](src/HavenEscrowV2.sol#L184), [L218](src/HavenEscrowV2.sol#L218), [L251](src/HavenEscrowV2.sol#L251), [L267](src/HavenEscrowV2.sol#L267) |
+
+All ML-DSA-87 checks go through the vendored kit `haven-pq-kit` (git submodule `lib/haven-pq-kit`, pinned at `9fe7ac2`; GitHub shows submodules only as a link, so the lines are linked here):
+
+- Precompile addresses: [`PqAuth.sol` L8–9](https://github.com/datharnu/haven-pq-kit/blob/9fe7ac289f512e39bce6a2d5e31baeb98195519c/src/PqAuth.sol#L8-L9) — `pqcVerify` `0x…0a01`, `pqcKeyStatus` `0x…0a02`.
+- `pqcVerify` call: [`PqAuth.verify`, L75–84](https://github.com/datharnu/haven-pq-kit/blob/9fe7ac289f512e39bce6a2d5e31baeb98195519c/src/PqAuth.sol#L75-L84); `pqcKeyStatus` call: [`PqAuth._status`, L95–105](https://github.com/datharnu/haven-pq-kit/blob/9fe7ac289f512e39bce6a2d5e31baeb98195519c/src/PqAuth.sol#L95-L105), used by [`_loadKey`, L86](https://github.com/datharnu/haven-pq-kit/blob/9fe7ac289f512e39bce6a2d5e31baeb98195519c/src/PqAuth.sol#L86) (registered, ML-DSA-87, possession proven, 2,592-byte key; fails closed).
+- Single-signer authorization (nonce, deadline, domain-separated message): [`PqAuth.authorize`, L45](https://github.com/datharnu/haven-pq-kit/blob/9fe7ac289f512e39bce6a2d5e31baeb98195519c/src/PqAuth.sol#L45).
+- 2-of-3 quorum: [`PqQuorum.authorizeQuorum`, L44](https://github.com/datharnu/haven-pq-kit/blob/9fe7ac289f512e39bce6a2d5e31baeb98195519c/src/PqQuorum.sol#L44).
+
+**Shared deployer.** `spike` (`qor143f0ghn8slqguwez73087dvq8lqnuuukqdu9fl`) deploys and relays for all four Haven entries (Courier, Haven Escrow, Haven Ledger, Steward). Project-page badges proven by its transactions do not by themselves mean this project uses that feature; `docs/kits.md` and this README say what this project uses.
 
 ---
 
@@ -263,6 +284,7 @@ npm run audit:check    # every QCAI finding re-checked against src/
 npm run evidence
 
 # Local web app (http://localhost:3020 — replay + browser verify + practice desk)
+npm ci --prefix apps/web   # once: the web app has its own dependencies
 npm run web
 ```
 
@@ -297,7 +319,7 @@ Live transaction scripts (`npm run deploy`, `npm run fund-client`, `npm run scen
 | `src/ts/escrow.ts` | TypeScript ML-DSA-87 signer for deliver, release, dispute, cancel, and resolve |
 | `src/ts/deliverable.ts` | Client-side AES-256-GCM encryption, ML-KEM-1024 QoreSeal, and 2-of-3 Shamir key splitting |
 | `lib/haven-pq-kit/` | Vendored `haven-pq-kit` v0.1.0 (`PqAuth`, `PqQuorum`, precompile wrappers) |
-| `test/` | Foundry unit, fuzz, invariant, factory, hostile-token, and byte-vector tests (111 tests: 64 for `HavenEscrow`, 47 for `HavenEscrowV2`) |
+| `test/` | Foundry unit, fuzz, invariant, factory, hostile-token, and byte-vector tests (111 tests: 64 for `HavenEscrow`, 47 for `HavenEscrowV2`; `forge test` prints 100 because it counts each invariant suite (6 invariants for `HavenEscrow`, 7 for `HavenEscrowV2`) as one test) |
 | `test/ts/` | Vitest suite for TypeScript signing, deliverables, and web ABI sync |
 | `apps/web/` | Next.js 16 app: `/` (rule & refusals), `/record` (four-scene replay & live browser PQC verifier), `/practice` (browser identities & Courier carry) |
 | `scripts/` | Deploy, six testnet scenes, `deploy-v2.ts` and `scene-6-receipt-gate.ts` (plan unless `--broadcast`), `evidence.ts` (134 checks: 130 recorded hashes plus 4 `HavenEscrowV2` state checks), `cbom.ts` (QoreScan + `ecrecover` check), `audit-names.ts` (QCAI findings vs. source), and `vectors.ts` |

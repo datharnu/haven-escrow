@@ -5,6 +5,9 @@
   "license": "Apache-2.0",
   "type": "module",
   "description": "Haven Escrow: milestone escrow whose funds can only reach the two named parties.",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "spike": "forge build && tsx scripts/spike.ts",
     "test:sol": "forge test",

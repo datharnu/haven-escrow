@@ -4,6 +4,13 @@ for (const width of [390, 1440]) {
   test(`practice starts empty and fits at ${width}px`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width, height: 900 });
+    const cspErrors: string[] = [];
+    // libsodium (argon2, via @qorechain/wallet-adapter) instantiates WebAssembly on load; a CSP block shows
+    // up as a console warning and an uncaught Aborted(CompileError) page error.
+    page.on("console", (message) => {
+      if (/Content Security Policy/i.test(message.text())) cspErrors.push(message.text());
+    });
+    page.on("pageerror", (error) => cspErrors.push(String(error)));
     await page.goto("/practice");
     await expect(page.getByRole("heading", { name: "No identities in this browser." })).toBeVisible();
     await page.getByRole("button", { name: "Make the two test identities" }).click();
@@ -32,6 +39,8 @@ for (const width of [390, 1440]) {
     await expect(page.getByText("No sealed file yet.")).toBeVisible();
     let overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+
+    expect(cspErrors).toEqual([]);
 
     await page.getByRole("button", { name: "Forget" }).click();
     await page.getByRole("button", { name: "Forget them" }).click();
