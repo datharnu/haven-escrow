@@ -54,15 +54,16 @@ Tunde, a developer in Lagos, takes a two-milestone job worth 2,000 fUSD from May
 11. [Roadmap](#roadmap)
 12. [Traction](#traction)
 13. [Built during the hackathon](#built-during-the-hackathon)
-14. [AI disclosure](#ai-disclosure)
-15. [Evidence: testnet addresses](#evidence-testnet-addresses)
-16. [Evidence: deploy, fund, and four scenes (20 November 2026)](#evidence-deploy-fund-and-four-scenes-20-november-2026)
-17. [Evidence: practice escrow and Courier carry (21 November 2026)](#evidence-practice-escrow-and-courier-carry-21-november-2026)
-18. [Evidence: delivery receipt gate (23 November 2026)](#evidence-delivery-receipt-gate-23-november-2026)
-19. [Evidence: precompile spike results](#evidence-precompile-spike-results)
-20. [Evidence: two-stage QCAI audit findings](#evidence-two-stage-qcai-audit-findings)
-21. [Evidence: Foundry tests, fuzzing, and invariants](#evidence-foundry-tests-fuzzing-and-invariants)
-22. [Evidence: design decisions and cost breakdown](#evidence-design-decisions-and-cost-breakdown)
+14. [Credits](#credits)
+15. [AI disclosure](#ai-disclosure)
+16. [Evidence: testnet addresses](#evidence-testnet-addresses)
+17. [Evidence: deploy, fund, and four scenes (20 November 2026)](#evidence-deploy-fund-and-four-scenes-20-november-2026)
+18. [Evidence: practice escrow and Courier carry (21 November 2026)](#evidence-practice-escrow-and-courier-carry-21-november-2026)
+19. [Evidence: delivery receipt gate (23 November 2026)](#evidence-delivery-receipt-gate-23-november-2026)
+20. [Evidence: precompile spike results](#evidence-precompile-spike-results)
+21. [Evidence: two-stage QCAI audit findings](#evidence-two-stage-qcai-audit-findings)
+22. [Evidence: Foundry tests, fuzzing, and invariants](#evidence-foundry-tests-fuzzing-and-invariants)
+23. [Evidence: design decisions and cost breakdown](#evidence-design-decisions-and-cost-breakdown)
 
 ---
 
@@ -185,7 +186,21 @@ Everything below runs on QoreChain Diana (`qorechain-diana`, EVM chain ID `9800`
 
 ## Rubric and track mapping
 
-Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bounty **Post-Quantum dApp** ("Build an EVM dApp whose sensitive actions receive post-quantum protection"; example projects include *escrow*). Submission deadline: **2 December 2026 at 23:59 UTC**. Jury point weights are not published; every requirement from the Prizes page is mapped below with its honest limit.
+### Judging rubric (official weights)
+
+The [builder FAQ](https://build.qorechain.io/faq) scores every track on the same five criteria; jurors check the [track requirements](#track-requirements) under them. Each row points to evidence that already exists and can be checked in about a minute.
+
+| Criterion (weight) | Where to check it (in about a minute) | Honest limit |
+| --- | --- | --- |
+| **Works as described (25%)** | Open [/record](https://havenesc.vercel.app/record) and click **Verify all**: every recorded ML-DSA-87 signature is re-verified in the browser against Diana, with no wallet. Open [/practice](https://havenesc.vercel.app/practice) to create and attack a live 0.1 fUSD escrow with fresh browser identities. From a clone, `npm run evidence` prints **134 passed, 0 failed** (no keys; about 3–4 minutes); `forge test` prints 100 passed, 0 failed (111 tests counting each invariant); `npm run test:ts` 23 and the web app's Vitest 42, 0 failed. Full path: [Judge it in 5 minutes](#judge-it-in-5-minutes). | Testnet only (`qorechain-diana`); fUSD has no value. `/practice` needs the Diana faucet or QoreX to fund its identities. `/record` checks only the recorded transactions, and the two steps refused before broadcast have no hash to read ([Known limits](#known-limits)). |
+| **QoreChain tech usage (25%)** | `EscrowFactory` `0xf30b…c09B`, `EscrowFactoryV2` `0x9b6b…2856`, Escrow D `0x5f35…69da` ([addresses](#evidence-testnet-addresses)). `pqcVerify` / `pqcKeyStatus` call sites: [Where the PQC checks are](#where-the-pqc-checks-are-for-jurors). Every action ran in a scoped EVM window opened by a hybrid ML-DSA-87 transaction (a classical-only open was refused with `code 20`). All five parties registered ML-DSA-87 keys with proof of possession (`deployments/accounts.json`). The deliverable is sealed with QoreSeal to the client's ML-KEM-1024 key from the chain's key registry (`src/ts/deliverable.ts`). fUSD came in through `MsgConvertCoin` (`9270876C…`). `HavenEscrowV2` reads Courier's `DeliveryReceipts` on chain. `/practice` uses the QoreX types and wallet adapter; `npm run evidence` uses `@qorechain/mcp`; `npm run cbom:check` uses QoreScan. | The PQC precompiles live on Diana only. The deployer and relayer `spike` is shared by all four Haven entries, so the project page can show features proven by its other projects' transactions. Haven Escrow uses no AMM pool (`scripts/fund-client.ts` only quotes pool 2 and refuses to swap) and no smart account, whatever the page badges say. |
+| **Post-quantum correctness and security (20%)** | Every payout needs a fresh ML-DSA-87 signature from the named party (`PqAuth.authorize`) or two of three arbiters (`PqQuorum`); the constructor checks `pqcKeyStatus` for all five parties. No function takes a recipient. Scene 2: the client's own classical key tried five ways and moved **0.000000 fUSD**; a replayed signature reverted `SignatureInvalid` (`0xd5634f54…`, [spike results](#evidence-precompile-spike-results)). [`docs/AUDIT.md`](docs/AUDIT.md) maps every QCAI finding to the code; `npm run audit:check` passes 12 of 12 (`HavenEscrow`) and 6 of 6 (`HavenEscrowV2`). `npm run cbom:check` passes. [`THREAT_MODEL.md`](THREAT_MODEL.md). | All three QCAI reports score 35/100 with findings that cite functions not in the code; `HavenEscrowV2` Stage 2 runs on 25 November 2026. No external audit. Foundry has no PQC precompiles, so contract tests use mock signatures; real ML-DSA-87 signatures are proven on testnet. Two colluding arbiters can choose any split and open the deliverable. |
+| **Originality (15%)** | `HavenEscrowV2`: the client's own ML-DSA-87 delivery receipt (signed on Courier's `DeliveryReceipts` over the milestone commitment) decides a dispute the arbiter panel leaves silent. Escrow D paid the freelancer `+100,000` and the client `0` after the client disputed and went silent; receipts from another key or over another hash were refused ([evidence](#evidence-delivery-receipt-gate-23-november-2026)). The deliverable's file key is sealed to the client with ML-KEM-1024 and Shamir-split 2-of-3 across the arbiters, and no payout can ever name a third address. | The receipt proves the client's device signed for the sealed file, not that the work is good. Only Escrow D was run with `HavenEscrowV2`. The two-name payment rule comes from the author's earlier project Meter ([Credits](#credits)). |
+| **Clarity, UX and documentation (15%)** | [Demo video (2:12)](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view); [Judge it in 5 minutes](#judge-it-in-5-minutes); `/record` replays every scene with plain verdicts; [`docs/AUDIT.md`](docs/AUDIT.md), [`THREAT_MODEL.md`](THREAT_MODEL.md), [Where each attack or failure stops](#where-each-attack-or-failure-stops), [Known limits](#known-limits). | The video is a motion-graphics explainer with synthetic narration, not a screen recording of a live session. Diana's explorer cannot verify Solidity source, so jurors match bytecode through `forge test` and `foundry.toml` settings. |
+
+### Track requirements
+
+Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bounty **Post-Quantum dApp** ("Build an EVM dApp whose sensitive actions receive post-quantum protection"; example projects include *escrow*). Submission deadline: **2 December 2026 at 23:59 UTC**. Every requirement from the Prizes page is mapped below with its honest limit.
 
 | Requirement (exact hackathon wording) | Where Haven Escrow proves it | Honest limit |
 | --- | --- | --- |
@@ -196,7 +211,7 @@ Built for **Build Before Q-Day** (`https://build.qorechain.io/`), category bount
 | **Public GitHub repository under MIT or Apache-2.0** | `https://github.com/datharnu/haven-escrow`, Apache-2.0 (`LICENSE`). | Explorer source verification is not available on Diana explorer; compiler settings are in `foundry.toml`. |
 | **README and testnet addresses** | This single-file `README.md` contains all addresses, hashes, audit findings, and limits. | Testnet only (`qorechain-diana`, chain ID 9800); fUSD has no monetary value. |
 | **Video of up to 3 minutes** | Shot list is ready in `docs/DEMO.md`; featured image is `docs/featured.png`. | [Demo video](https://drive.google.com/file/d/1fdnasWVgEd4Xvn6EQttzeeOz6zZIXtOi/view) (2:12). Motion-graphics explainer built from the recorded evidence, with synthetic narration (ElevenLabs); not a screen recording of a live session. |
-| **Built during the event & open-source credits** | First commit `6343063` on 20 November 2026; all kits and libraries credited below. | Shares the two-name immutable-line design shape from the author's earlier project Meter; all contracts here were written fresh for QoreChain. |
+| **Built during the event & open-source credits** | First commit `6343063` on 20 November 2026; all kits, libraries and design references are credited in [Credits](#credits). | Shares the two-name immutable-line design shape from the author's earlier project Meter; all contracts here were written fresh for QoreChain. |
 
 
 ### Where the PQC checks are (for jurors)
@@ -348,12 +363,49 @@ No external users or customers yet; all runs are our own testnet proofs on `qore
 
 Built during **Build Before Q-Day** (November 2026; deadline 2 December 2026 at 23:59 UTC). First commit: `6343063` on **20 November 2026** (`Add the Apache-2.0 license.`). Licence: **Apache-2.0** (`LICENSE`).
 
-**Credits and open-source libraries:**
-- **QoreChain kits:** `@qorechain/sdk` 0.14.0, `@qorechain/pqc` 0.2.3, `@qorechain/qoreseal` 0.1.0, `@qorechain/qoresign` 0.1.0, `@qorechain/mcp` 0.1.1, `@qorechain/qorescan` 0.1.0, `@qorechain/evm` 0.14.0, `@qorechain/wallet-adapter` 0.6.0, `@qorechain/qorex-types` 0.1.0.
-- **`haven-pq-kit` v0.1.0:** `https://github.com/datharnu/haven-pq-kit` (submodule commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`). Its authorization interface follows the public design of [qore-pq-kit](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr (Apache-2.0); the implementation was written for Haven.
-- **Haven family:** Courier file-carry and `DeliveryReceipts` integration on escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. Steward does not call this escrow.
-- **Meter:** The rule shape ("a stored payment line with no other recipient") comes from the author's earlier project [Meter](https://github.com/datharnu/Meter); all contracts here were written fresh for QoreChain.
-- **Other libraries:** Solidity 0.8.28, Foundry (`forge-std`), viem 2.47.6, `@cosmjs/stargate` 0.39.0, `@noble/ciphers` 2.4.0, `@noble/hashes` 2.4.0, `shamir-secret-sharing` 0.0.4, Next.js 16, React 19, Tailwind CSS 4, Vitest, Playwright, tsx, TypeScript.
+Open-source libraries, kits and design references are credited in [Credits](#credits).
+
+---
+
+## Credits
+
+Built from the repository's dependency files: `package.json`, `apps/web/package.json` (versions as resolved in each `package-lock.json`) and `git submodule status`. Licences are taken from each package's own `package.json`. Transitive dependencies are not listed.
+
+**QoreChain kits and network packages**
+- `@qorechain/sdk` 0.14.0 (Apache-2.0), root and web app
+- `@qorechain/evm` 0.14.0 (Apache-2.0), root and web app
+- `@qorechain/pqc` 0.2.3 (Apache-2.0), root and web app
+- `@qorechain/qoreseal` 0.1.0 (Apache-2.0), root and web app
+- `@qorechain/qoresign` 0.1.0 (Apache-2.0), root and web app
+- `@qorechain/mcp` 0.1.1 (Apache-2.0), used by `npm run evidence`
+- `@qorechain/qorescan` 0.1.0 (Apache-2.0, dev), used by `npm run cbom:check`
+- `@qorechain/qorex-types` 0.1.0 and `@qorechain/wallet-adapter` 0.6.0 (Apache-2.0), web app (`/practice`)
+- viem 2.47.6 (MIT), root and web app
+- `@cosmjs/stargate` 0.39.0 (Apache-2.0); `cosmjs-types` 0.9.0 (Apache-2.0), web app
+
+**Post-quantum and crypto libraries**
+- `haven-pq-kit` v0.1.0 (Apache-2.0): git submodule `lib/haven-pq-kit` at commit `9fe7ac289f512e39bce6a2d5e31baeb98195519c`, and the npm dependency `github:datharnu/haven-pq-kit#v0.1.0` ([repository](https://github.com/datharnu/haven-pq-kit)). Its `PqAuth` / `PqQuorum` authorization interface follows the public design of [`qore-pq-kit`](https://github.com/Adityaakr/qore-pq-kit) by Adityaakr, Apache-2.0; the implementation was written for Haven.
+- `@noble/ciphers` 2.4.0 and `@noble/hashes` 2.4.0 (MIT), root and web app
+- `shamir-secret-sharing` 0.0.4 (Apache-2.0), root and web app
+
+**Contracts toolchain**
+- Foundry (`forge`), Solidity 0.8.28 (`foundry.toml`: optimizer 200 runs, `via_ir`)
+- `forge-std` v1.17.0 (MIT OR Apache-2.0): git submodule `lib/forge-std` at commit `f3dae6e6ee381f25eb6a246f7da9b85c91a68219` ([repository](https://github.com/foundry-rs/forge-std))
+
+**Web app frameworks and UI** (`apps/web`)
+- Next.js (`next`) 16.4.6 (MIT), React and React DOM 19.1.1 (MIT)
+- Tailwind CSS 4.1.17 and `@tailwindcss/postcss` 4.1.17 (MIT, dev)
+- Fonts: `@fontsource/familjen-grotesk`, `@fontsource/fragment-mono`, `@fontsource/newsreader` 5.3.0 (OFL-1.1)
+
+**Testing and tooling**
+- TypeScript 5.6.3 (Apache-2.0), `tsx` 4.19.4 (MIT), `@types/node` 22.19.1 (MIT)
+- Vitest 3.2.4 (MIT), root and web app
+- `@playwright/test` 1.65.1 (Apache-2.0), `@types/react` 19.1.16 and `@types/react-dom` 19.1.9 (MIT), dev dependencies of `apps/web`
+
+**Design references and prior work**
+- **Meter:** the rule shape ("a stored payment line with no other recipient") comes from the author's earlier project [Meter](https://github.com/datharnu/Meter); all contracts here were written fresh for QoreChain.
+- **Courier (Haven family):** `HavenEscrowV2` reads Courier's deployed `DeliveryReceipts`; its tests run against a copy in `test/courier/DeliveryReceipts.sol`, and `apps/web/vendor/courier/` holds copied Courier receipt and file code for the carry flow. Courier carried the file for escrow `0x14312980702C0e2c9b85f3478ba9396e59054706`. Steward does not call this escrow.
+- Demo video (not in this repository): built in Remotion; narration by an ElevenLabs synthetic voice; background track "Vastness" from Mixkit (see [AI disclosure](#ai-disclosure)).
 
 ---
 
